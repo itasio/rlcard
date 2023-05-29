@@ -1,10 +1,10 @@
 from copy import deepcopy, copy
 import numpy as np
 
-from rlcard.games.limitholdem import Dealer
-from rlcard.games.limitholdem import Player, PlayerStatus
-from rlcard.games.limitholdem import Judger
-from rlcard.games.limitholdem import Round
+from rlcard.games.newlimitholdem import Dealer
+from rlcard.games.newlimitholdem import Player, PlayerStatus
+from rlcard.games.newlimitholdem import Judger
+from rlcard.games.newlimitholdem import Round
 
 
 class NewLimitHoldemGame:
@@ -17,12 +17,14 @@ class NewLimitHoldemGame:
         # These arguments can be specified for creating new games
 
         # Small blind and big blind
+        self.ante = 1
         self.small_blind = 1
         self.big_blind = 2 * self.small_blind
 
         # Raise amount and allowed times
-        self.raise_amount = self.big_blind
-        self.allowed_raise_num = 4
+        self.raise_amount = self.ante
+        self.allowed_raise_num = 2
+        self.allowed_action_num = 2
 
         self.num_players = num_players
 
@@ -76,8 +78,8 @@ class NewLimitHoldemGame:
         # Randomly choose a small blind and a big blind
         s = self.np_random.randint(0, self.num_players)
         b = (s + 1) % self.num_players
-        self.players[b].in_chips = self.big_blind
-        self.players[s].in_chips = self.small_blind
+        self.players[b].in_chips = self.ante
+        self.players[s].in_chips = self.ante
 
         # The player next to the big blind plays the first
         self.game_pointer = (b + 1) % self.num_players
@@ -85,13 +87,13 @@ class NewLimitHoldemGame:
         # Initialize a bidding round, in the first round, the big blind and the small blind needs to
         # be passed to the round for processing.
         self.round = Round(raise_amount=self.raise_amount,
-                           allowed_raise_num=self.allowed_raise_num,
+                           allowed_action_num=self.allowed_action_num,
                            num_players=self.num_players,
                            np_random=self.np_random)
 
         self.round.start_new_round(game_pointer=self.game_pointer, raised=[p.in_chips for p in self.players])
 
-        # Count the round. There are 2 rounds in each game.
+        # Count the round. There are 3 rounds in each game.
         self.round_counter = 0
 
         # Save the history for stepping back to the last state.
@@ -178,7 +180,7 @@ class NewLimitHoldemGame:
         Returns:
             (int): The number of actions. There are 4 actions (call, raise, check and fold)
         """
-        return 4
+        return 5
 
     def get_player_id(self):
         """

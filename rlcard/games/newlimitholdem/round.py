@@ -5,7 +5,7 @@
 class NewLimitHoldemRound:
     """Round can call other Classes' functions to keep the game running"""
 
-    def __init__(self, raise_amount, allowed_raise_num, num_players, np_random):
+    def __init__(self, raise_amount, allowed_action_num, num_players, np_random):
         """
         Initialize the round class
 
@@ -17,12 +17,16 @@ class NewLimitHoldemRound:
         self.np_random = np_random
         self.game_pointer = None
         self.raise_amount = raise_amount
-        self.allowed_raise_num = allowed_raise_num
+        self.allowed_action_num = allowed_action_num
 
         self.num_players = num_players
 
         # Count the number of raise
         self.have_raised = 0
+
+        # Count the number of total actions taken
+        self.action_taken = 0
+
 
         # Count the number without raise
         # If every player agree to not raise, the round is over
@@ -44,6 +48,7 @@ class NewLimitHoldemRound:
         """
         self.game_pointer = game_pointer
         self.have_raised = 0
+        self.action_taken = 0
         self.not_raise_num = 0
         if raised:
             self.raised = raised
@@ -68,13 +73,14 @@ class NewLimitHoldemRound:
             diff = max(self.raised) - self.raised[self.game_pointer]
             self.raised[self.game_pointer] = max(self.raised)
             players[self.game_pointer].in_chips += diff
+            self.action_taken += 1
             self.not_raise_num += 1
 
         elif action == 'raise':
             diff = max(self.raised) - self.raised[self.game_pointer] + self.raise_amount
             self.raised[self.game_pointer] = max(self.raised) + self.raise_amount
             players[self.game_pointer].in_chips += diff
-            self.have_raised += 1
+            self.action_taken += 1
             self.not_raise_num = 1
 
         elif action == 'fold':
@@ -82,6 +88,7 @@ class NewLimitHoldemRound:
             self.player_folded = True
 
         elif action == 'check':
+            self.action_taken += 1
             self.not_raise_num += 1
 
         self.game_pointer = (self.game_pointer + 1) % self.num_players
@@ -101,8 +108,8 @@ class NewLimitHoldemRound:
         """
         full_actions = ['call', 'raise', 'fold', 'check']
 
-        # If the the number of raises already reaches the maximum number raises, we can not raise any more
-        if self.have_raised >= self.allowed_raise_num:
+        # If the number of raises already reaches the maximum number raises, we can not raise any more
+        if self.action_taken >= self.allowed_action_num:
             full_actions.remove('raise')
 
         # If the current chips are less than that of the highest one in the round, we can not check
@@ -112,6 +119,12 @@ class NewLimitHoldemRound:
         # If the current player has put in the chips that are more than others, we can not call
         if self.raised[self.game_pointer] == max(self.raised):
             full_actions.remove('call')
+
+        # and if he has put more chips he cannot fold
+        if self.raised[self.game_pointer] == self.raised[(self.game_pointer + 1) % self.num_players]:
+            full_actions.remove('fold')
+
+
 
         return full_actions
 

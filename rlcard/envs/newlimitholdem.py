@@ -16,7 +16,7 @@ class NewLimitholdemEnv(Env):
     '''
 
     def __init__(self, config):
-        ''' Initialize the Limitholdem environment
+        ''' Initialize the New Limitholdem environment
         '''
         self.name = 'new-limit-holdem'
         self.default_game_config = DEFAULT_GAME_CONFIG
@@ -40,7 +40,7 @@ class NewLimitholdemEnv(Env):
     def _extract_state(self, state):
         ''' Extract the state representation from state dictionary for agent
 
-        Note: Currently the use the hand cards and the public cards. 
+        Note: Currently the use the hand cards and the public cards.
         Args:
             state (dict): Original state from the game
 
