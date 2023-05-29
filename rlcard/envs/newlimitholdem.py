@@ -5,20 +5,20 @@ from collections import OrderedDict
 
 import rlcard
 from rlcard.envs import Env
-from rlcard.games.limitholdem import Game
+from rlcard.games.newlimitholdem import Game
 
 DEFAULT_GAME_CONFIG = {
         'game_num_players': 2,
         }
 
-class LimitholdemEnv(Env):
-    ''' Limitholdem Environment
+class NewLimitholdemEnv(Env):
+    ''' NewLimitholdem Environment
     '''
 
     def __init__(self, config):
         ''' Initialize the Limitholdem environment
         '''
-        self.name = 'limit-holdem'
+        self.name = 'new-limit-holdem'
         self.default_game_config = DEFAULT_GAME_CONFIG
         self.game = Game()
         super().__init__(config)
@@ -26,7 +26,7 @@ class LimitholdemEnv(Env):
         self.state_shape = [[72] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
 
-        with open(os.path.join(rlcard.__path__[0], 'games/limitholdem/card2index.json'), 'r') as file:
+        with open(os.path.join(rlcard.__path__[0], 'games/newlimitholdem/card2index.json'), 'r') as file:
             self.card2index = json.load(file)
 
     def _get_legal_actions(self):
@@ -40,8 +40,7 @@ class LimitholdemEnv(Env):
     def _extract_state(self, state):
         ''' Extract the state representation from state dictionary for agent
 
-        Note: Currently the use the hand cards and the public cards. TODO: encode the states
-
+        Note: Currently the use the hand cards and the public cards. 
         Args:
             state (dict): Original state from the game
 

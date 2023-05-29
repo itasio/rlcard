@@ -19,6 +19,11 @@ register(
 )
 
 register(
+    env_id='new-limit-holdem',
+    entry_point='rlcard.envs.newlimitholdem:NewLimitholdemEnv',
+)
+
+register(
     env_id='no-limit-holdem',
     entry_point='rlcard.envs.nolimitholdem:NolimitholdemEnv',
 )

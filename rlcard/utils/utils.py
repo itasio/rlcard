@@ -39,6 +39,19 @@ def init_standard_deck():
     res = [Card(suit, rank) for suit in suit_list for rank in rank_list]
     return res
 
+
+def init_20_deck():
+    ''' Initialize a small deck of 20 cards
+
+        Returns:
+            (list): Alist of Card object
+        '''
+    suit_list = ['S', 'H', 'D', 'C']
+    rank_list = ['A', 'T', 'J', 'Q', 'K']
+    res = [Card(suit, rank) for suit in suit_list for rank in rank_list]
+    return res
+
+
 def init_54_deck():
     ''' Initialize a standard deck of 52 cards, BJ and RJ
 
