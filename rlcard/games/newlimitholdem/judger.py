@@ -1,4 +1,4 @@
-from rlcard.games.limitholdem.utils import compare_hands
+from rlcard.games.newlimitholdem.utils import compare_hands
 import numpy as np
 
 
