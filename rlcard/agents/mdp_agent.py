@@ -40,7 +40,41 @@ class MDPAgent():
 
 
     def traverse_tree(self, probs, player_id):
+        if self.env.is_over():
+            return self.env.get_payoffs()
 
+        current_player = self.env.get_player_id()
+        state_utility = 0
+        if not current_player == self.agent_id:
+            state = self.env.get_state(current_player)
+            # other agent move
+            action = self.env.agents[current_player ''' allos player'''].step(state)
+
+            # Keep traversing the child state
+            self.env.step(action)
+            Vstate = self.traverse_tree(probs, player_id)
+            self.env.step_back()
+            return Vstate;
+
+
+        if current_player == self.agent_id:
+            Vaction = {}
+            Vstate = 0
+            obs, legal_actions = self.get_state(current_player)
+            action_probs = self.action_probs(obs, legal_actions, self.policy)
+            for action in legal_actions:
+                action_prob = action_probs[action]
+
+                # Keep traversing the child state
+                self.env.step(action)
+                V = self.traverse_tree(probs, player_id)
+                self.env.step_back()
+
+                Vstate += action_prob * V
+                Vaction[action] = V
+
+            ''' allazw to policy symfwna me ta nea dedomena'''
+        return Vstate
 
 
     def action_probs(self, obs, legal_actions, policy):
