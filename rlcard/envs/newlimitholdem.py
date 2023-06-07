@@ -54,15 +54,18 @@ class NewLimitholdemEnv(Env):
 
         public_cards = state['public_cards']
         hand = state['hand']
-        raise_nums = state['raise_nums']
-        cards = public_cards + hand
-        idx = [self.card2index[card] for card in cards]
-        obs = np.zeros(72)
-        obs[idx] = 1
-        for i, num in enumerate(raise_nums):
-            obs[52 + i * 5 + num] = 1
-        extracted_state['obs'] = obs
 
+        obs = np.zeros(27)
+        idx = [self.card2index[card] for card in hand]
+        obs[idx] = 1
+        idx2 = []
+        for j, card in enumerate(public_cards):
+            idx2 = [(self.card2index[card] + 5*j)]
+        obs[idx2] = 1
+        obs[state['my_chips'] + 15] = 1
+        obs[sum(state['all_chips']) - state['my_chips'] + 21] = 1
+
+        extracted_state['obs'] = obs
         extracted_state['raw_obs'] = state
         extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
         extracted_state['action_record'] = self.action_recorder

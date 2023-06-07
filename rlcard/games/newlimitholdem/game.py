@@ -180,7 +180,7 @@ class NewLimitHoldemGame:
         Returns:
             (int): The number of actions. There are 4 actions (call, raise, check and fold)
         """
-        return 5
+        return 4
 
     def get_player_id(self):
         """

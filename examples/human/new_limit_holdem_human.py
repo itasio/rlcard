@@ -51,4 +51,7 @@ while (True):
         print('You lose {} chips!'.format(-payoffs[0]))
     print('')
 
+    print(trajectories[0])
+    print("=========================================================================================================")
+    print(trajectories[1])
     input("Press any key to continue...")
