@@ -110,3 +110,6 @@ class NewLimitholdemEnv(Env):
         state['current_player'] = self.game.game_pointer
         state['legal_actions'] = self.game.get_legal_actions()
         return state
+
+    def get_agents(self):
+        return self.agents

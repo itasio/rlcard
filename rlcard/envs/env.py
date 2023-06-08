@@ -24,6 +24,7 @@ class Env(object):
                 'rlcard/envs/blackjack.py'
                 TODO: Support more game configurations in the future.
         '''
+        self.agents = None
         self.allow_step_back = self.game.allow_step_back = config['allow_step_back']
         self.action_recorder = []
 

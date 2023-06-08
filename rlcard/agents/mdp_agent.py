@@ -1,5 +1,5 @@
 import collections
-
+from scipy.special import softmax
 import os
 import pickle
 
@@ -15,69 +15,70 @@ class MDPAgent():
          Args:
          env (Env): Env class
         '''
-
+        self.agent_id = 0
         self.use_raw = False
         self.env = env
         self.model_path = model_path
 
         # A policy is a dict state_str -> action probabilities
-        self.policy = collections.defaultdict(list)
-        self.average_policy = collections.defaultdict(np.array)
+        self.policy = collections.defaultdict(np.array)
 
         # Regret is a dict state_str -> action regrets
-        self.regrets = collections.defaultdict(np.array)
+        self.total_values = collections.defaultdict(np.array)
 
         self.iteration = 0
-
 
     def train(self):
         ''' Do one iteration of CFR
                 '''
         self.iteration += 1
         self.env.reset()
-        self.traverse_tree(probs, player_id)
+        agents = self.env.get_agents()
+        for id, agent in enumerate(agents):
+            if isinstance(agent, MDPAgent):
+                self.agent_id = id
+                break
+        self.traverse_tree()
 
-
-
-    def traverse_tree(self, probs, player_id):
+    def traverse_tree(self):
         if self.env.is_over():
-            return self.env.get_payoffs()
+            chips = self.env.get_payoffs()
+            return chips[self.agent_id]
 
         current_player = self.env.get_player_id()
         state_utility = 0
         if not current_player == self.agent_id:
             state = self.env.get_state(current_player)
             # other agent move
-            action = self.env.agents[current_player ''' allos player'''].step(state)
+            action = self.env.agents[current_player].step(state)
 
             # Keep traversing the child state
             self.env.step(action)
-            Vstate = self.traverse_tree(probs, player_id)
+            Vstate = self.traverse_tree()
             self.env.step_back()
             return Vstate;
-
 
         if current_player == self.agent_id:
             Vaction = {}
             Vstate = 0
             obs, legal_actions = self.get_state(current_player)
-            action_probs = self.action_probs(obs, legal_actions, self.policy)
+            action_probs = self.action_probs(obs, legal_actions, self.policy, self.total_values)
             for action in legal_actions:
                 action_prob = action_probs[action]
 
                 # Keep traversing the child state
                 self.env.step(action)
-                V = self.traverse_tree(probs, player_id)
+                V = self.traverse_tree()
                 self.env.step_back()
 
-                Vstate += action_prob * V
-                Vaction[action] = V
+                Vstate += action_prob * V  # state value
+                Vaction[action] = V  # value of each action
+            ''' alter policy according to new Vactions'''
+            self.update_policy(obs, Vaction, legal_actions)
 
-            ''' allazw to policy symfwna me ta nea dedomena'''
         return Vstate
 
-
-    def action_probs(self, obs, legal_actions, policy):
+    def action_probs(self, obs, legal_actions, policy, action_values):
         ''' Obtain the action probabilities of the current state
 
         Args:
@@ -85,6 +86,7 @@ class MDPAgent():
             legal_actions (list): List of leagel actions
             player_id (int): The current player
             policy (dict): The used policy
+            action_values (dict): The action_values of policy
 
         Returns:
             (tuple) that contains:
@@ -92,12 +94,40 @@ class MDPAgent():
                 legal_actions (list): Indices of legal actions
         '''
         if obs not in policy.keys():
-            action_probs = np.array([1.0 / self.env.num_actions for _ in range(self.env.num_actions)])
-            self.policy[obs] = action_probs
+            action_values[obs] = np.array([-np.inf for action in range(self.env.num_actions)])
+            tactions = np.array([-np.inf for action in range(self.env.num_actions)])
+            for action in range(self.env.num_actions):
+                if action in legal_actions:
+                    tactions[action] = 0
+            action_values[obs] = tactions
+            action_probs = softmax(action_values[obs])
+            policy[obs] = action_probs
+            self.total_values = action_values[obs]
+            self.policy[obs] = policy[obs]
         else:
             action_probs = policy[obs]
         action_probs = remove_illegal(action_probs, legal_actions)
         return action_probs
+
+    def update_policy(self, obs, Vaction, legal_actions):
+        ''' Update the policy according to the new action values
+                Args:
+                    obs (str): state_str
+                    Vaction (list): The new action_values of the current itaration
+         '''
+
+        t_vaction = self.total_values[obs]
+        t_vaction *= self.iteration
+        # for i in range(self.env.num_actions):
+        #     if i in legal_actions:
+        #         t_vaction[i] += Vaction[i]
+        for i in Vaction:
+            t_vaction[i] += Vaction[i]
+        t_vaction /= (self.iteration + 1)
+
+        # update action values
+        self.total_values[obs] = t_vaction
+        self.policy[obs] = softmax(self.total_values[obs])
 
 
     def eval_step(self, state):
@@ -119,10 +149,24 @@ class MDPAgent():
 
         return action, info
 
+    def get_state(self, player_id):
+        ''' Get state_str of the player
+
+        Args:
+            player_id (int): The player id
+
+        Returns:
+            (tuple) that contains:
+                state (str): The state str
+                legal_actions (list): Indices of legal actions
+        '''
+        state = self.env.get_state(player_id)
+        return state['obs'].tostring(), list(state['legal_actions'].keys())
 
     def save(self):
-        ''' Save model
+        '''  Save model
         '''
+
         if not os.path.exists(self.model_path):
             os.makedirs(self.model_path)
 
@@ -130,15 +174,13 @@ class MDPAgent():
         pickle.dump(self.policy, policy_file)
         policy_file.close()
 
-        regrets_file = open(os.path.join(self.model_path, 'regrets.pkl'),'wb')
-        pickle.dump(self.regrets, regrets_file)
-        regrets_file.close()
+        values_file = open(os.path.join(self.model_path, 'action_values.pkl'),'wb')
+        pickle.dump(self.regrets, values_file)
+        values_file.close()
 
         iteration_file = open(os.path.join(self.model_path, 'iteration.pkl'),'wb')
         pickle.dump(self.iteration, iteration_file)
         iteration_file.close()
-
-
 
     def load(self):
         ''' Load model
@@ -150,9 +192,9 @@ class MDPAgent():
         self.policy = pickle.load(policy_file)
         policy_file.close()
 
-        regrets_file = open(os.path.join(self.model_path, 'regrets.pkl'),'rb')
-        self.regrets = pickle.load(regrets_file)
-        regrets_file.close()
+        values_file = open(os.path.join(self.model_path, 'action_values.pkl'),'rb')
+        self.total_values = pickle.load(values_file)
+        values_file.close()
 
         iteration_file = open(os.path.join(self.model_path, 'iteration.pkl'),'rb')
         self.iteration = pickle.load(iteration_file)
