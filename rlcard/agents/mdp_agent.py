@@ -21,10 +21,10 @@ class MDPAgent():
         self.model_path = model_path
 
         # A policy is a dict state_str -> action probabilities
-        self.policy = collections.defaultdict(np.array)
+        self.policy = collections.defaultdict(list)
 
         # Regret is a dict state_str -> action regrets
-        self.total_values = collections.defaultdict(np.array)
+        self.total_values = collections.defaultdict(list)
 
         self.iteration = 0
 
@@ -93,17 +93,15 @@ class MDPAgent():
                 action_probs(numpy.array): The action probabilities
                 legal_actions (list): Indices of legal actions
         '''
-        if obs not in policy.keys():
-            action_values[obs] = np.array([-np.inf for action in range(self.env.num_actions)])
+        if obs not in policy.keys() and obs not in self.total_values.keys():
             tactions = np.array([-np.inf for action in range(self.env.num_actions)])
             for action in range(self.env.num_actions):
                 if action in legal_actions:
                     tactions[action] = 0
-            action_values[obs] = tactions
-            action_probs = softmax(action_values[obs])
-            policy[obs] = action_probs
-            self.total_values = action_values[obs]
-            self.policy[obs] = policy[obs]
+            self.total_values[obs] = tactions
+            action_probs = softmax(tactions)
+            self.total_values[obs] = action_values[obs]
+            self.policy[obs] = action_probs
         else:
             action_probs = policy[obs]
         action_probs = remove_illegal(action_probs, legal_actions)
@@ -127,7 +125,7 @@ class MDPAgent():
 
         # update action values
         self.total_values[obs] = t_vaction
-        self.policy[obs] = softmax(self.total_values[obs])
+        self.policy[obs] = softmax(t_vaction)
 
 
     def eval_step(self, state):
@@ -140,8 +138,9 @@ class MDPAgent():
             action (int): Predicted action
             info (dict): A dictionary containing information
         '''
-        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.average_policy)
-        action = np.random.choice(len(probs), p=probs)
+        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy, self.total_values)
+        #action = np.random.choice(len(probs), p=probs)
+        action = np.argmax(probs)
 
         info = {}
         info['probs'] = {state['raw_legal_actions'][i]: float(probs[list(state['legal_actions'].keys())[i]]) for i in
@@ -175,7 +174,7 @@ class MDPAgent():
         policy_file.close()
 
         values_file = open(os.path.join(self.model_path, 'action_values.pkl'),'wb')
-        pickle.dump(self.regrets, values_file)
+        pickle.dump(self.total_values, values_file)
         values_file.close()
 
         iteration_file = open(os.path.join(self.model_path, 'iteration.pkl'),'wb')

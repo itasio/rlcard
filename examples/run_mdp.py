@@ -6,7 +6,7 @@ import argparse
 import rlcard
 from rlcard.agents import (
     MDPAgent,
-    RandomAgent,
+    RandomAgent, ThresholdAgent,
 )
 from rlcard.utils import (
     set_seed,
@@ -39,7 +39,7 @@ def train(args):
         env,
         os.path.join(
             args.log_dir,
-            'mdp_model',
+            'mdp_model_vsThreshold',
         ),
     )
     agent.load()  # If we have saved model, we first load the model
@@ -47,12 +47,12 @@ def train(args):
     # Evaluate CFR against random
     eval_env.set_agents([
         agent,
-        RandomAgent(num_actions=env.num_actions),
+        ThresholdAgent(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        RandomAgent(num_actions=env.num_actions),
+        ThresholdAgent(num_actions=env.num_actions),
     ])
 
     # Start training
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=5000,
+        default=100000,
     )
     parser.add_argument(
         '--num_eval_games',
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--evaluate_every',
         type=int,
-        default=100,
+        default=500,
     )
     parser.add_argument(
         '--log_dir',
