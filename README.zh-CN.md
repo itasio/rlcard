@@ -246,7 +246,7 @@ Agent 1: +++
 *   [/rlcard/models](rlcard/models): 包括预训练模型和规则模型在内的模型集合。
 
 ## 更多文档
-请参考[这里](docs/README.md)查阅更多文档[Documents](docs/README.md)。API文档在我们的[网站](http://www.rlcard.org)中。
+请参考[这里](docs/README_rlcard.md)查阅更多文档[Documents](docs/README_rlcard.md)。API文档在我们的[网站](http://www.rlcard.org)中。
 
 ## 贡献
 我们非常感谢对本项目的贡献！请为反馈或漏洞创建Issue。如果您想恭喜代码，请参考[贡献指引](./CONTRIBUTING.md)。如果您有任何问题，请联系通过[daochen.zha@rice.edu](mailto:daochen.zha@rice.edu)联系[Daochen Zha](https://github.com/daochenzha)

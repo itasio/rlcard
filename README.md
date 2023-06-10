@@ -282,7 +282,7 @@ The purposes of the main modules are listed as below:
 *   [/rlcard/models](rlcard/models): Model zoo including pre-trained models and rule models.
 
 ## More Documents
-For more documentation, please refer to the [Documents](docs/README.md) for general introductions. API documents are available at our [website](http://www.rlcard.org).
+For more documentation, please refer to the [Documents](docs/README_rlcard.md) for general introductions. API documents are available at our [website](http://www.rlcard.org).
 
 ## Contributing
 Contribution to this project is greatly appreciated! Please create an issue for feedbacks/bugs. If you want to contribute codes, please refer to [Contributing Guide](./CONTRIBUTING.md). If you have any questions, please contact [Daochen Zha](https://github.com/daochenzha) with [daochen.zha@rice.edu](mailto:daochen.zha@rice.edu).
