@@ -39,7 +39,7 @@ def train(args):
         env,
         os.path.join(
             args.log_dir,
-            'ql_model_vsRandom',
+            'ql_model',
         ),
     )
     agent.load()  # If we have saved model, we first load the model
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=100000,
+        default=10000,
     )
     parser.add_argument(
         '--num_eval_games',

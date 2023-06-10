@@ -16,8 +16,8 @@ dp
          Args:
          env (Env): Env class
         '''
-        self.gamma = 1
-        self.alpha = 1
+        self.gamma = 0.3
+        self.alpha = 0.3
         self.agent_id = 0
         self.use_raw = False
         self.env = env
@@ -92,7 +92,7 @@ dp
                 q = self.traverse_tree()
                 self.env.step_back()
 
-                value += action_prob * q * self.gamma
+                value += action_prob * q
                 quality[action] = q  # value of each action
 
             ''' alter policy according to new Vactions'''
@@ -138,7 +138,7 @@ dp
         # update the quality function
         qf = self.qualities[obs]
         for i in next_state_values:
-            qf[i] += self.alpha * (next_state_values[i] - qf[i])
+            qf[i] += self.alpha * (next_state_values[i]* self.gamma - qf[i])
 
         # update action values
         self.qualities[obs] = qf
@@ -157,8 +157,8 @@ dp
 
         probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy,
                                   self.qualities)
-        action = np.random.choice(len(probs), p=probs)
-        #action = np.argmax(probs)
+        #action = np.random.choice(len(probs), p=probs)
+        action = np.argmax(probs)
 
         info = {}
         info['probs'] = {state['raw_legal_actions'][i]: float(probs[list(state['legal_actions'].keys())[i]]) for i in
