@@ -1,12 +1,12 @@
 import numpy as np
+from rlcard.games.newlimitholdem.utils import Hand
 
 
-
-class ThresholdAgent(object):
+class ThresholdAgent2(object):
     ''' A threshold agent. He will be playing new-limit-holdem.
         Will bet the maximum amount allowed in each round, provided that it has at least a high enough "combination".
         In round 1 it will always bet/raise with a K or Ace.
-        In round 2 it always raise.
+        In round 2 it will always bet/raise with any pair and three.
     '''
 
     def __init__(self, num_actions):
@@ -36,7 +36,7 @@ class ThresholdAgent(object):
             if hand == 'SA' or hand == 'HA' or hand == 'DA' or hand == 'CA' or\
             hand == 'SK' or hand == 'HK' or hand == 'DK' or hand == 'CK':
                 #high enough combination
-                #i will play as offensive as I can i.e. 1raise 2. call 3. check 
+                #i will play as offensive as I can i.e. 1raise 2. call 3. check
                 if 'raise' in legal_actions:
                     return 1
                 elif 'call' in legal_actions:
@@ -48,15 +48,41 @@ class ThresholdAgent(object):
             else:   # play randomly
                 x = np.random.choice(list(state['legal_actions'].keys()))
                 return x
-        else:   #we are on 2nd round and no matter the card i have i play the same style as before
-            if 'raise' in legal_actions:
-                return 1
-            elif 'call' in legal_actions:
-                return 0
-            elif 'check' in legal_actions:
-                return 3
-            else:   #fold
-                return 2
+        else:   # second round raise only on pairs and threes
+            cards = state['raw_obs']['hand'] + state['raw_obs']['public_cards']
+            hand = Hand(cards)
+            hand.evaluateHand()
+            if hand.has_three() or hand.has_pair():
+                if 'raise' in legal_actions:
+                    return 1
+                elif 'call' in legal_actions:
+                    return 0
+                elif 'check' in legal_actions:
+                    return 3
+                else:   #fold
+                    return 2
+            else:
+                if 'check' and 'fold' in legal_actions:
+                    # Generate a random number between 0 and 1
+                    r = np.random.rand()
+                    if r > 0.5:
+                        return 3
+                    else:
+                        return 2
+                elif 'fold' and 'call' in legal_actions:
+                    r = np.random.rand()
+                    if r > 0.5:
+                        return 0
+                    else:
+                        return 2
+                elif 'check' in legal_actions:
+                    return 3
+                elif 'fold' in legal_actions:
+                    return 2
+                elif 'call' in legal_actions:
+                    return 0
+                else:  # raise only on pairs and three
+                    return 1
 
     def eval_step(self, state):
         ''' Predict the action given the current state for evaluation.

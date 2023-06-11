@@ -10,14 +10,14 @@ class QLAgent:
     ''' Implement Q-learning algorithm
     '''
 
-    def __init__(self, env, model_path='./ql_model'):
+    def __init__(self, env, model_path='./ql_model', alpha=0.1, gamma=0.3):
         ''' Initialize Agent
-dp
          Args:
          env (Env): Env class
+         hyperparameters: alpha, gamma: default the optimal found be tune_ql
         '''
-        self.gamma = 0.3
-        self.alpha = 0.3
+        self.gamma = gamma
+        self.alpha = alpha
         self.agent_id = 0
         self.use_raw = False
         self.env = env
@@ -138,7 +138,7 @@ dp
         # update the quality function
         qf = self.qualities[obs]
         for i in next_state_values:
-            qf[i] += self.alpha * (next_state_values[i]* self.gamma - qf[i])
+            qf[i] += self.alpha * (next_state_values[i] * self.gamma - qf[i])
 
         # update action values
         self.qualities[obs] = qf

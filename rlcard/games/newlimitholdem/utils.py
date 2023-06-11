@@ -2,7 +2,7 @@ import numpy as np
 
 class Hand:
     def __init__(self, all_cards):
-        self.all_cards = all_cards # one hand card + two public cards
+        self.all_cards = all_cards  # one hand card + two public cards
         self.category = 0
         # type of a players' best 3 cards, greater combination has higher number eg: 0:"Not_Yet_Evaluated" 1: "High_Card"
         # 2: "Highest Pair", 3: "three of a kind"
@@ -48,11 +48,11 @@ class Hand:
         self.cards_by_rank, self.product = self._getcards_by_rank(
             self.all_cards)
 
-        if self._has_three():
+        if self.has_three():
             self.category = 3
             #Three of a Kind
             self.best_three = self._get_Three_of_a_kind_cards()
-        elif self._has_pair():
+        elif self.has_pair():
             self.category = 2
             #One Pair
             self.best_three = self._get_One_Pair_cards()
@@ -131,7 +131,7 @@ class Hand:
 
 
 
-    def _has_three(self):
+    def has_three(self):
         '''
         Check the existence of three cards
         Returns:
@@ -143,7 +143,7 @@ class Hand:
         else:
             return False
 
-    def _has_pair(self):
+    def has_pair(self):
         '''
         Check the existence of 1 pair cards
         Returns:

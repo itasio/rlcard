@@ -4,18 +4,18 @@
 import rlcard
 from rlcard.agents import LimitholdemHumanAgent as HumanAgent
 from rlcard.agents import RandomAgent
-from rlcard.agents import ThresholdAgent
+from rlcard.agents import ThresholdAgent2
 from rlcard.utils.utils import print_card
 
 # Make environment
 env = rlcard.make('new-limit-holdem')
 human_agent = HumanAgent(env.num_actions)
-agent_0 = RandomAgent(num_actions=env.num_actions)
-#agentThr = ThresholdAgent(num_actions=env.num_actions)
+#agent_0 = RandomAgent(num_actions=env.num_actions)
+agentThr = ThresholdAgent2(num_actions=env.num_actions)
 
 env.set_agents([
     human_agent,
-    agent_0,
+    agentThr,
 ])
 
 print(">>New Limit Hold'em random agent")

@@ -6,7 +6,7 @@ import argparse
 import rlcard
 from rlcard.agents import (
     QLAgent,
-    RandomAgent, ThresholdAgent,
+    RandomAgent, ThresholdAgent, ThresholdAgent2
 )
 from rlcard.utils import (
     set_seed,
@@ -44,15 +44,15 @@ def train(args):
     )
     agent.load()  # If we have saved model, we first load the model
 
-    # Evaluate CFR against random
+    # Evaluate Ql
     eval_env.set_agents([
         agent,
-        RandomAgent(num_actions=env.num_actions),
+        ThresholdAgent2(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        RandomAgent(num_actions=env.num_actions),
+        ThresholdAgent2(num_actions=env.num_actions),
     ])
 
     # Start training
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=10000,
+        default=3000,
     )
     parser.add_argument(
         '--num_eval_games',
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--evaluate_every',
         type=int,
-        default=500,
+        default=100,
     )
     parser.add_argument(
         '--log_dir',
