@@ -1,21 +1,31 @@
 ''' A toy example of playing against a random agent on new Limit Hold'em
 '''
+import os
+
+import args as args
 
 import rlcard
 from rlcard.agents import LimitholdemHumanAgent as HumanAgent
-from rlcard.agents import RandomAgent
-from rlcard.agents import ThresholdAgent2
+from rlcard.agents import RandomAgent, ThresholdAgent, ThresholdAgent2, QLAgent
 from rlcard.utils.utils import print_card
 
 # Make environment
 env = rlcard.make('new-limit-holdem')
 human_agent = HumanAgent(env.num_actions)
-#agent_0 = RandomAgent(num_actions=env.num_actions)
-agentThr = ThresholdAgent2(num_actions=env.num_actions)
+# Init agent:
+agent_0 = RandomAgent(num_actions=env.num_actions)
+agent_0 = ThresholdAgent2(num_actions=env.num_actions)
+agent = QLAgent(
+        env,
+        os.path.join(
+            args.log_dir,
+            'ql_model',
+        ),
+    )
 
 env.set_agents([
     human_agent,
-    agentThr,
+    agent_0,
 ])
 
 print(">>New Limit Hold'em random agent")

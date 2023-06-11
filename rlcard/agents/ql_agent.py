@@ -10,7 +10,7 @@ class QLAgent:
     ''' Implement Q-learning algorithm
     '''
 
-    def __init__(self, env, model_path='./ql_model', alpha=0.1, gamma=0.3):
+    def __init__(self, env, model_path='./ql_model', alpha=0.1, gamma=0.4):
         ''' Initialize Agent
          Args:
          env (Env): Env class
