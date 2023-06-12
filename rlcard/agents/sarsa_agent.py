@@ -6,25 +6,22 @@ import pickle
 from rlcard.utils.utils import *
 
 
-class QLAgent:
-    ''' Implement Q-learning algorithm
+class SARSAAgent:
+    ''' Implement SARSA algorithm
     '''
 
-    def __init__(self, env, model_path='./ql_model', a=0.1, g=0.1, e=0.99):
+    def __init__(self, env, model_path='./sarsa_model', alpha=0.1, gamma=0.4):
         ''' Initialize Agent
-dp
          Args:
          env (Env): Env class
+         hyperparameters: alpha, gamma: default the optimal found be tune_ql
         '''
-        self.epsilon = 1
-        self.gamma = g
-        self.alpha = a
-        self.decay_factor = e
+        self.gamma = gamma
+        self.alpha = alpha
         self.agent_id = 0
         self.use_raw = False
         self.env = env
         self.model_path = model_path
-        self.epsilon_min = 0.01
 
         # A policy is a dict state_str -> action probabilities
         self.policy = collections.defaultdict(list)
@@ -36,23 +33,18 @@ dp
 
     def train(self):
         ''' Do one iteration of QLA
-        '''
+                '''
         self.iteration += 1
         self.env.reset()
         self.find_agent()
         self.traverse_tree()
-        self._decay_epsilon()
 
     def find_agent(self):
         agents = self.env.get_agents()
         for id, agent in enumerate(agents):
-            if isinstance(agent, QLAgent):
+            if isinstance(agent, SARSAAgent):
                 self.agent_id = id
                 break
-
-    def _decay_epsilon(self):
-        if self.epsilon > self.epsilon_min:
-            self.epsilon = max(self.epsilon_min, self.epsilon * self.decay_factor)
 
     def traverse_tree(self):
         if self.env.is_over():
@@ -62,6 +54,21 @@ dp
         current_player = self.env.get_player_id()
         # compute the quality of previous state
         if not current_player == self.agent_id:
+            # quality = 0
+            # obs, legal_actions = self.get_state(current_player)
+            # # other agent move
+            # probs = [0 for _ in range(self.env.num_actions)]
+            # for i in legal_actions:
+            #     probs[i] = 1 / len(legal_actions)
+            #
+            # for action in legal_actions:
+            #     action_prob = probs[action]
+            #     # Keep traversing the child state
+            #     self.env.step(action)
+            #     value = self.traverse_tree()
+            #     self.env.step_back()
+            #     quality += action_prob * self.gamma * value
+
             state = self.env.get_state(current_player)
             # other agent move
             action = self.env.agents[current_player].step(state)
@@ -74,30 +81,24 @@ dp
 
         if current_player == self.agent_id:
             quality = {}
+            value = 0
             obs, legal_actions = self.get_state(current_player)
-            # if first time we encounter state initialize qualities
-            self.action_probs(obs, legal_actions, self.policy, self.qualities)
-
+            action_probs = self.action_probs(obs, legal_actions, self.policy, self.qualities)
             for action in legal_actions:
+                action_prob = action_probs[action]
+
                 # Keep traversing the child state
                 self.env.step(action)
                 q = self.traverse_tree()
                 self.env.step_back()
 
+                value += action_prob * q
                 quality[action] = q  # value of each action
 
             ''' alter policy according to new Vactions'''
-            if np.random.rand() < self.epsilon:
-                # explore
-                qstate = np.random.choice(list(quality.values()))
-            else:
-                # action with highest Q value
-                qstate = np.max(list(quality.values()))
-
-            ''' alter Qfunction according to Q_next_state'''
             self.update_policy(obs, quality, legal_actions)
 
-        return qstate * self.gamma
+        return value*self.gamma
 
     def action_probs(self, obs, legal_actions, policy, action_values):
         ''' Obtain the action probabilities of the current state
@@ -128,7 +129,6 @@ dp
         action_probs = remove_illegal(action_probs, legal_actions)
         return action_probs
 
-
     def update_policy(self, obs, next_state_values, legal_actions):
         ''' Update the policy according to the new state/action quality
                 Args:
@@ -157,15 +157,8 @@ dp
 
         probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy,
                                   self.qualities)
-        # action = np.random.choice(len(probs), p=probs)
+        #action = np.random.choice(len(probs), p=probs)
         action = np.argmax(probs)
-
-        # if np.random.rand() < self.epsilon:
-        #     action = np.random.choice(list(state['legal_actions'].keys()))
-        # else:
-        #     action = np.argmax(probs)
-        #
-        # self.decay_epsilon()
 
         info = {}
         info['probs'] = {state['raw_legal_actions'][i]: float(probs[list(state['legal_actions'].keys())[i]]) for i in
@@ -177,7 +170,6 @@ dp
         '''step = eval.step
         '''
         return self.eval_step(state)
-
 
     def get_state(self, player_id):
         ''' Get state_str of the player

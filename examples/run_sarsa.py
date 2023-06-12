@@ -1,4 +1,4 @@
-''' An example of solve New Hold'em with Q-learning
+''' An example of solve New Hold'em with SARSA
 '''
 import os
 import argparse
@@ -36,17 +36,17 @@ def train(args):
     set_seed(args.seed)
 
     # Initilize training Agent
-    agent = QLAgent(
+    agent = SARSAAgent(
         env,
         os.path.join(
             args.log_dir,
-            'ql_model',
+            'sarsa_model',
 
         ),
     )
     agent.load()  # If we have saved model, we first load the model
 
-    # Evaluate Ql
+    # Evaluate SARSA
     eval_env.set_agents([
         agent,
         ThresholdAgent(num_actions=env.num_actions),
@@ -56,6 +56,27 @@ def train(args):
         agent,
         ThresholdAgent(num_actions=env.num_actions),
     ])
+
+    # sarsa vs ql
+    # agent2 = QLAgent(
+    #     env,
+    #     os.path.join(
+    #         args.log_dir,
+    #         'ql_model',
+    #
+    #     ),
+    # )
+    # agent2.load
+    #
+    # eval_env.set_agents([
+    #     agent,
+    #     agent2,
+    # ])
+    #
+    # env.set_agents([
+    #     agent,
+    #     agent2,
+    # ])
 
     # Start training
     with Logger(args.log_dir) as logger:
@@ -78,10 +99,10 @@ def train(args):
         # Get the paths
         csv_path, fig_path = logger.csv_path, logger.fig_path
     # Plot the learning curve
-    plot_curve(csv_path, fig_path, 'Q-learning')
+    plot_curve(csv_path, fig_path, 'SARSA')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("Q-Learning Agent example in RLCard")
+    parser = argparse.ArgumentParser("SARSA Agent example in RLCard")
     parser.add_argument(
         '--seed',
         type=int,
@@ -105,7 +126,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--log_dir',
         type=str,
-        default='experiments/new_limit_holdem_ql_result/',
+        default='experiments/new_limit_holdem_sarsa_result/',
     )
 
     args = parser.parse_args()

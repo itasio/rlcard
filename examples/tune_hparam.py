@@ -1,3 +1,7 @@
+''' Find all the optimal hyperparameters and compare for q learning algorithms on one opponent
+q-learning and sarsa
+'''
+
 import os
 import argparse
 import numpy as np
@@ -6,7 +10,7 @@ import shutil
 import pandas as pd
 
 import rlcard
-from rlcard.agents import QLAgent, RandomAgent, ThresholdAgent, ThresholdAgent2
+from rlcard.agents import QLAgent, SARSAAgent, RandomAgent, ThresholdAgent, ThresholdAgent2
 from rlcard.utils import set_seed, tournament, Logger, plot_curve
 
 def train(args, alpha, gamma):

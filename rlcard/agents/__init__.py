@@ -18,4 +18,5 @@ from rlcard.agents.human_agents.uno_human_agent import HumanAgent as UnoHumanAge
 from rlcard.agents.random_agent import RandomAgent
 from rlcard.agents.threshold_agent import ThresholdAgent
 from rlcard.agents.threshold_agent2 import ThresholdAgent2
+from rlcard.agents.sarsa_agent import SARSAAgent
 from rlcard.agents.ql_agent import QLAgent
