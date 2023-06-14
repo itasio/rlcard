@@ -11,5 +11,5 @@ new_limit_holdem_human: play againt any suitable agent
 Q-learning variation algorithm implemented: ql_agent(QLAgent)
 run_ql: train ql, tune_ql: tune hyperparameters of ql
 Currently implementing a policy iteration algorithm agent: 
+SARSA variation algorithm implemented: sarsa_agent(SARSAAgent)
 
-Results in graphs in examples/experiments
