@@ -35,10 +35,19 @@ dp
             self.iteration += 1
             old_policy = self.policy.copy()
             self.evaluate_policy()
-            if old_policy == self.policy:
+            if self.compare_policys(old_policy, self.policy):
                 break
         print('Optimal policy found: State space length: %d after %d iterations' % (len(self.policy), self.iteration))
 
+    def compare_policys(self, p1, p2):
+        if p1.keys() != p2.keys():
+            return False
+
+        for key in p1:
+            if not np.array_equal(p1[key], p2[key]):
+                return False
+
+        return True
     def find_agent(self):
         agents = self.env.get_agents()
         for id, agent in enumerate(agents):
@@ -111,7 +120,7 @@ dp
         return Vstate * self.gamma
 
     def improve_policy(self, obs, quality, legal_actions):
-        best_action = np.argmax(quality)
+        best_action = max(quality, key=quality.get)
 
         new_policy = np.array([0 for action in range(self.env.num_actions)])
         new_policy[best_action] = 1
@@ -155,9 +164,9 @@ dp
 
         ''' random agent'''
         i = len(legal_actions)
-        probs = np.array([0 for action in range(self.env.num_actions)])
-        for action in legal_actions:
-            probs[action] = 1/i
+        probs = np.zeros(self.env.num_actions)
+        for a in legal_actions:
+            probs[a] = 1/i
         return probs
 
     def eval_step(self, state):
@@ -171,8 +180,7 @@ dp
             info (dict): A dictionary containing information
         '''
 
-        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy,
-                                  self.qualities)
+        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy)
         # action = np.random.choice(len(probs), p=probs)
         action = np.argmax(probs)
 
