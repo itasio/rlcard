@@ -2,7 +2,7 @@
 '''
 import os
 
-import args as args
+# import args as args
 
 import rlcard
 from rlcard.agents import LimitholdemHumanAgent as HumanAgent, SARSAAgent
@@ -14,25 +14,25 @@ env = rlcard.make('new-limit-holdem')
 human_agent = HumanAgent(env.num_actions)
 # Init agent:
 agent_0 = RandomAgent(num_actions=env.num_actions)
-agent_0 = ThresholdAgent2(num_actions=env.num_actions)
-sarsa_agent = SARSAAgent(
-        env,
-        os.path.join(
-            'experiments/new_limit_holdem_sarsa_result/sarsa_model',
-        ),
-    )
-sarsa_agent.load()
-ql_agent = QLAgent(
-        env,
-        os.path.join(
-            'experiments/new_limit_holdem_ql_result/ql_model',
-        ),
-    )
-ql_agent.load()
+# agent_0 = ThresholdAgent2(num_actions=env.num_actions)
+# sarsa_agent = SARSAAgent(
+#         env,
+#         os.path.join(
+#             'experiments/new_limit_holdem_sarsa_result/sarsa_model',
+#         ),
+#     )
+# sarsa_agent.load()
+# ql_agent = QLAgent(
+#         env,
+#         os.path.join(
+#             'experiments/new_limit_holdem_ql_result/ql_model',
+#         ),
+#     )
+# ql_agent.load()
 
 env.set_agents([
     human_agent,
-    sarsa_agent,
+    agent_0,
 ])
 
 print(">>New Limit Hold'em random agent")
