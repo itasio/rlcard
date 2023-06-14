@@ -32,7 +32,7 @@ ql_agent.load()
 
 env.set_agents([
     human_agent,
-    sarsa_agent,
+    ql_agent,
 ])
 
 print(">>New Limit Hold'em random agent")

@@ -24,7 +24,7 @@ class NewLimitHoldemPlayer:
         # The chips that this player has put in until now
         self.in_chips = 0
 
-    def get_state(self, public_cards, all_chips, legal_actions):
+    def get_state(self, public_cards, all_chips, legal_actions, first):
         """
         Encode the state for the player
 
@@ -36,6 +36,7 @@ class NewLimitHoldemPlayer:
             (dict): The state of the player
         """
         return {
+            'first': 0 if first == self.player_id else 1,
             'hand': [c.get_index() for c in self.hand],
             'public_cards': [c.get_index() for c in public_cards],
             'all_chips': all_chips,

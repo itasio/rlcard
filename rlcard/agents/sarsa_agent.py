@@ -25,7 +25,7 @@ class SARSAAgent:
 
         # A policy is a dict state_str -> action probabilities
         self.policy = collections.defaultdict(list)
-
+        self.a = len(self.policy)
         # Regret is a dict state_str -> action regrets
         self.qualities = collections.defaultdict(list)
 
@@ -35,6 +35,7 @@ class SARSAAgent:
         ''' Do one iteration of QLA
                 '''
         self.iteration += 1
+        self.a = len(self.policy)
         self.env.reset()
         self.find_agent()
         self.traverse_tree()
