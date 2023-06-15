@@ -10,11 +10,12 @@ class PIAgent:
     ''' Implement policy - iteration algorithm
     '''
 
-    def __init__(self, env, g=1):
+    def __init__(self, env, g=0.1):
         ''' Initialize Agent
 dp
          Args:
          env (Env): Env class
+         converge se < 10 iterations
         '''
 
         self.gamma = g
@@ -28,14 +29,19 @@ dp
 
         self.iteration = 0
 
-    def train(self):
+    def train(self, episodes):
+        k = 0
         ''' Find optimal policy
         '''
         while True:
+            k += 1
             self.iteration += 1
+            print(self.iteration)
             old_policy = self.policy.copy()
             self.evaluate_policy()
             if self.compare_policys(old_policy, self.policy):
+                break
+            if k == episodes:
                 break
         print('Optimal policy found: State space length: %d after %d iterations' % (len(self.policy), self.iteration))
 
@@ -63,16 +69,16 @@ dp
         for rank1 in rank_list:
             for rank2 in rank_list:
                 for rank3 in rank_list:
-                    self.env.reset(self.agent_id, self.agent_id, Card(suit,rank1), Card(suit,rank2), Card(suit,rank3))
+                    self.env.reset(self.agent_id, Card(suit,rank1), Card(suit,rank2), Card(suit,rank3))
                     self.traverse_tree()
-        for rank in rank_list:
-            player = (self.agent_id + 1) % self.env.num_players
-            for rank1 in rank_list:
-                for rank2 in rank_list:
-                    for rank3 in rank_list:
-                        self.env.reset(player, self.agent_id, Card(suit, rank1), Card(suit, rank2),
-                                       Card(suit, rank3))
-                        self.traverse_tree()
+        # for rank in rank_list:
+        #     player = (self.agent_id + 1) % self.env.num_players
+        #     for rank1 in rank_list:
+        #         for rank2 in rank_list:
+        #             for rank3 in rank_list:
+        #                 self.env.reset(player, self.agent_id, Card(suit, rank1), Card(suit, rank2),
+        #                                Card(suit, rank3))
+        #                 self.traverse_tree()
 
 
     def traverse_tree(self):

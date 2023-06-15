@@ -47,7 +47,7 @@ class NewLimitHoldemGame:
         """Specify some game specific parameters, such as number of players"""
         self.num_players = game_config['game_num_players']
 
-    def init_game(self, starter=None, agent=None, hcard=None, pcard1=None, pcard2=None):
+    def init_game(self, agent=None, hcard=None, pcard1=None, pcard2=None):
         """
         Initialize the game of limit texas holdem
 
@@ -94,10 +94,10 @@ class NewLimitHoldemGame:
         self.players[s].in_chips = self.ante
 
         # The player that plays the first
-        if starter is None:
-            self.game_pointer = (b + 1) % self.num_players
-        else:
-            self.game_pointer = starter
+        # if starter is None:
+        self.game_pointer = (b + 1) % self.num_players
+        # else:
+        # self.game_pointer = starter
         self.first = self.game_pointer
 
         # Initialize a bidding round, in the first round, the big blind and the small blind needs to

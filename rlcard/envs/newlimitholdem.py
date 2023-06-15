@@ -23,7 +23,7 @@ class NewLimitholdemEnv(Env):
         self.game = Game()
         super().__init__(config)
         self.actions = ['call', 'raise', 'fold', 'check']
-        self.state_shape = [[32] for _ in range(self.num_players)]
+        self.state_shape = [[31] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
 
         with open(os.path.join(rlcard.__path__[0], 'games/newlimitholdem/card2index.json'), 'r') as file:
@@ -55,7 +55,7 @@ class NewLimitholdemEnv(Env):
         public_cards = state['public_cards']
         hand = state['hand']
 
-        obs = np.zeros(32)
+        obs = np.zeros(31)
         idx = [self.card2index[card] for card in hand]
         obs[idx] = 1
         idx2 = []
@@ -67,7 +67,7 @@ class NewLimitholdemEnv(Env):
         for i in legal_actions:
             idx3 = [i + 27]
             obs[idx3] = 1
-        obs[31] = state['first']
+        #obs[31] = state['first']
 
         extracted_state['obs'] = obs
         extracted_state['raw_obs'] = state

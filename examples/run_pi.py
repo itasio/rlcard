@@ -44,20 +44,20 @@ def train(args):
     # Evaluate PI
     eval_env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
 
     # Start training
     with Logger(args.log_dir) as logger:
-        agent.train()
         # Evaluate the performance.
         for episode in range(args.num_episodes):
+            agent.train(10)
             logger.log_performance(
                 episode,
                 tournament(
