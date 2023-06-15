@@ -47,7 +47,7 @@ class NewLimitHoldemGame:
         """Specify some game specific parameters, such as number of players"""
         self.num_players = game_config['game_num_players']
 
-    def init_game(self, agent=None, hcard=None, pcard1=None, pcard2=None):
+    def init_game(self, starter=None, agent=None, hcard=None, pcard1=None, pcard2=None):
         """
         Initialize the game of limit texas holdem
 
@@ -81,7 +81,7 @@ class NewLimitHoldemGame:
                 self.players[i % self.num_players].hand.append(self.dealer.deal_card())
         else:
             self.players[agent].hand.append(hcard)
-            self.players[(agent + 1) % self.num_players].hand.append(self.dealer.deal_card())
+
 
 
         # Initialize public cards
@@ -94,10 +94,10 @@ class NewLimitHoldemGame:
         self.players[s].in_chips = self.ante
 
         # The player that plays the first
-        # if starter is None:
-        self.game_pointer = (b + 1) % self.num_players
-        # else:
-        # self.game_pointer = starter
+        if starter is None:
+            self.game_pointer = (b + 1) % self.num_players
+        else:
+            self.game_pointer = starter
         self.first = self.game_pointer
 
         # Initialize a bidding round, in the first round, the big blind and the small blind needs to
@@ -170,6 +170,17 @@ class NewLimitHoldemGame:
 
         return state, self.game_pointer
 
+    def change_hand(self, card, player_id):
+        if not self.players[player_id].hand:
+            self.players[player_id].hand.append(card)
+        else:
+            self.players[player_id].hand[0] = card
+
+    def op_hand(self, player):
+        if not self.players[player].hand:
+            return None
+        else:
+            return self.players[player].hand[0]
     def step_back(self):
         """
         Return to the previous state of the game

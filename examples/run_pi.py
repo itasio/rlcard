@@ -57,7 +57,7 @@ def train(args):
     with Logger(args.log_dir) as logger:
         # Evaluate the performance.
         for episode in range(args.num_episodes):
-            agent.train(10)
+            agent.train(2)
             logger.log_performance(
                 episode,
                 tournament(
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=10,
+        default=100,
     )
 
 
