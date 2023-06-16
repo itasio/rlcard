@@ -2,7 +2,37 @@ import pprint as pp
 import numpy as np
 import collections
 
-class ValueIterAgent(object):
+'''
+P is the state space that we need for implementing value iteration
+P["state1","raise"] for example captures what happens if at state1 I take action: raise.
+next state is about the next state the agent will be. It's not about the other player's state
+'''
+
+# P = {
+
+# "state1": {
+#     "raise": [(0.9, "state2", 0.0, 9),           # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
+#         (0.1, "state3", 0.5, 1)
+#     ],
+#     "check": [(0.1, "state2", 1.0, 1),
+#         (0.8, "state3", -1.0, 8),
+#         (0.1, "state4", 0.0, 1)
+#     ]
+# },
+
+# "state2": {
+#     "call": [(0.9, "state4", 0.0, 9), # prob of next state, next state, reward of next state, ctr(num of time visited next state)
+#         (0.1, "state3", 0.5, 1)
+#     ],
+#     "fold": [(0.1, "state3", 1.0, 1),
+#         (0.8, "state3", -1.0, 8),
+#         (0.1, "state4", 0.0, 1)
+#     ]
+# }
+
+# }
+
+class ValueIterAgent:
     ''' A random agent. Random agents is for running toy examples on the card games
         Initially will play some rounds randomly to estimate 
     '''
@@ -20,9 +50,9 @@ class ValueIterAgent(object):
         self.agent_id = 0
         self.model_path = model_path
         self.iteration = 0
-
-        self.values = collections.defaultdict(float)    # value function for each state
-
+        self.P = collections.__dict__
+        self.V = collections.defaultdict(float)    # value function for each state
+        self.Q = collections.defaultdict(list)     # Q table
     
 
     def train(self):
@@ -39,6 +69,9 @@ class ValueIterAgent(object):
             if isinstance(agent, ValueIterAgent):
                 self.agent_id = id
                 break
+
+    def traverse_tree():
+        pass
 
     @staticmethod
     def step(state):
@@ -92,9 +125,11 @@ if __name__ == '__main__':
     #         if i == len(x)-1:
     #             x[len(x)]= 4
     #             # print(x[3])
+    P = collections.__dict__
     P = {
+
     "state1": {
-        "raise": [(0.9, "state2", 0.0, 9), # prob of next state, next state, reward of next state, ctr(num of time visited next state)
+        "raise": [(0.9, "state2", 0.0, 9),           # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
             (0.1, "state3", 0.5, 1)
         ],
         "check": [(0.1, "state2", 1.0, 1),
@@ -119,4 +154,13 @@ if __name__ == '__main__':
     i = "state3"
     if i in P.keys():
         print("yes")
-    #pp.pprint(P)
+    pp.pprint(P)
+    k = P["state1"]["raise"]    # list
+    print(k)
+
+    if "state2" in k[0]:
+        print("yes")
+    else:
+        print("no")
+    Q = np.zeros((2, 4), dtype=np.float64)
+    print(Q)
