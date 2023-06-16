@@ -10,7 +10,7 @@ class QLAgent:
     ''' Implement Q-learning algorithm
     '''
 
-    def __init__(self, env, model_path='./ql_model', a=0.1, g=0.1, e=0.99):
+    def __init__(self, env, model_path='./ql_model', a=0.1, g=1, e=0.99):
         ''' Initialize Agent
 dp
          Args:
@@ -25,6 +25,7 @@ dp
         self.env = env
         self.model_path = model_path
         self.epsilon_min = 0.01
+        self.v = 0
 
         # A policy is a dict state_str -> action probabilities
         self.policy = collections.defaultdict(list)
@@ -40,8 +41,9 @@ dp
         self.iteration += 1
         self.env.reset()
         self.find_agent()
-        self.traverse_tree()
+        v = self.traverse_tree()
         self._decay_epsilon()
+        self.v = v
 
     def find_agent(self):
         agents = self.env.get_agents()
@@ -70,7 +72,7 @@ dp
             self.env.step(action)
             Vstate = self.traverse_tree()
             self.env.step_back()
-            return Vstate
+            return Vstate * self.gamma
 
         if current_player == self.agent_id:
             quality = {}

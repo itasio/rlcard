@@ -41,7 +41,6 @@ def train(args):
         os.path.join(
             args.log_dir,
             'ql_model',
-
         ),
     )
     agent.load()  # If we have saved model, we first load the model
@@ -49,12 +48,12 @@ def train(args):
     # Evaluate Ql
     eval_env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        ThresholdAgent2(num_actions=env.num_actions),
     ])
 
     # Start training
@@ -72,6 +71,7 @@ def train(args):
                     )[0]
                 )
                 # print(agent.epsilon)
+                print(agent.v)
             agent.train()
 
 
@@ -90,17 +90,17 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=20000,
+        default=6000,
     )
     parser.add_argument(
         '--num_eval_games',
         type=int,
-        default=2000,
+        default=3000,
     )
     parser.add_argument(
         '--evaluate_every',
         type=int,
-        default=400,
+        default=100,
     )
     parser.add_argument(
         '--log_dir',
