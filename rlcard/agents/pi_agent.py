@@ -31,6 +31,8 @@ dp
         self.policy = collections.defaultdict(list)
         self.state_values = collections.defaultdict(list)
         self.iteration = 0
+        self.flag = 0
+        self.rank = None
 
     def train(self, episodes=None):
         ''' Find optimal policy
@@ -59,6 +61,7 @@ dp
             print('changes in policy: %d' % count)
             return False
         return True
+
 
     def compare_values(self, v1, v2):
         if v1.keys() != v2.keys():
@@ -111,7 +114,9 @@ dp
         if not current_player == self.agent_id:
             vtotal = 0
             if self.env.op_has_card(current_player):
+                self.flag = 1
                 for rank in self.rank_list:
+                    self.rank = rank
                     self.env.change_op_hand(Card('S', rank), current_player)
                     # other agent move
                     obs, legal_actions = self.get_state(current_player)
@@ -126,6 +131,7 @@ dp
                         Vstate += v * prob
                         self.env.step_back()
                     vtotal += Vstate*self.card_prob
+                self.flag = 0
                 return vtotal*self.gamma
             else:
                 # other agent move
@@ -176,6 +182,8 @@ dp
             q[i] = quality[i]
 
         new_policy = softmax(q)
+        if self.flag == 1:
+            obs = (obs, self.rank)
         self.policy[obs] = new_policy
 
 
@@ -194,6 +202,9 @@ dp
                 action_probs(numpy.array): The action probabilities
                 legal_actions (list): Indices of legal actions
         '''
+
+        if self.flag == 1:
+            obs = (obs, self.rank)
         # if new state initialize policy
         if obs not in policy.keys():
             best_action = random.choice(legal_actions)
