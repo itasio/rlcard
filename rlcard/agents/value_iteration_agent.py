@@ -1,3 +1,4 @@
+import pprint as pp
 import numpy as np
 import collections
 
@@ -12,28 +13,32 @@ class ValueIterAgent(object):
         Args:
             env (Env): Env class
         '''
-        self.use_raw = False
+        self.use_raw = 2
         self.env = env
         self.conv_limit = conv_limit
         self.discount_factor = e
+        self.agent_id = 0
         self.model_path = model_path
-        self.rewards = collections.defaultdict(float)
-        self.transits = collections.defaultdict(collections.Counter)
-        self.values = collections.defaultdict(float)
+        self.iteration = 0
 
-    def play_n_random_steps(self, count):
-        for _ in range(count):
-            action = self.env.action_space.sample()
-            new_state, reward, is_done, _ = self.env.step(action)
-            self.rewards[(self.state, action, new_state)] = reward
-            self.transits[(self.state, action)][new_state] += 1
-            if is_done:
-                self.state = self.env.reset() 
-            else: 
-                self.state = new_state
+        self.values = collections.defaultdict(float)    # value function for each state
+
+    
 
     def train(self):
-        self.play_n_random_steps
+        ''' Do one iteration of value iteration
+        '''
+        self.iteration += 1
+        self.env.reset()
+        self.find_agent()
+        self.traverse_tree()
+
+    def find_agent(self):
+        agents = self.env.get_agents()
+        for id, agent in enumerate(agents):
+            if isinstance(agent, ValueIterAgent):
+                self.agent_id = id
+                break
 
     @staticmethod
     def step(state):
@@ -81,9 +86,37 @@ if __name__ == '__main__':
     print(x.keys())
     print(x.values())
     print(x.items())
-    x.keys().__len__
-    for i in range():
-        print(i)
-        if i == 1:
-            x[3]= 4
-            # print(x[3])
+    # while True:
+    #     for i in range(len(x)):
+    #         print(x[i])
+    #         if i == len(x)-1:
+    #             x[len(x)]= 4
+    #             # print(x[3])
+    P = {
+    "state1": {
+        "raise": [(0.9, "state2", 0.0, 9), # prob of next state, next state, reward of next state, ctr(num of time visited next state)
+            (0.1, "state3", 0.5, 1)
+        ],
+        "check": [(0.1, "state2", 1.0, 1),
+            (0.8, "state3", -1.0, 8),
+            (0.1, "state4", 0.0, 1)
+        ]
+    },
+
+    "state2": {
+        "call": [(0.9, "state4", 0.0, 9), # prob of next state, next state, reward of next state, ctr(num of time visited next state)
+            (0.1, "state3", 0.5, 1)
+        ],
+        "fold": [(0.1, "state3", 1.0, 1),
+            (0.8, "state3", -1.0, 8),
+            (0.1, "state4", 0.0, 1)
+        ]
+    }
+
+    }
+    P["state3"] = 5
+    print(P.keys())
+    i = "state3"
+    if i in P.keys():
+        print("yes")
+    #pp.pprint(P)
