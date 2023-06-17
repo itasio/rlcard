@@ -153,8 +153,10 @@ class ValueIterAgent:
                 self.Q[obs][action] = 0
         else:
             # new state found, add it to dicts and set appropriate values
+            self.P[obs] = {}
             self.Q[obs] = [-np.inf, -np.inf, -np.inf, -np.inf]
             for action in legal_actions:
+                self.P[obs][action] = [[0,0,0,0]]
                 self.Q[obs][action] = 0
             
 
