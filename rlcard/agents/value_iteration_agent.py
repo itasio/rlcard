@@ -41,7 +41,7 @@ class ValueIterAgent:
         in order to find optimal policy
     '''
 
-    def __init__(self, env, model_path='./vi_model', e=0.8, conv_limit=1e-10):
+    def __init__(self, env, model_path='./vi_model', gamma=0.8, conv_limit=1e-10):
         ''' Initilize the value iteration agent
 
         Args:
@@ -50,11 +50,11 @@ class ValueIterAgent:
         self.use_raw = 2
         self.env = env
         self.conv_limit = conv_limit
-        self.discount_factor = e
+        self.gamma = gamma
         self.agent_id = 0
         self.model_path = model_path
         self.iteration = 0
-        self.P = collections.__dict__               # state space
+        self.P = {}              # state space
         self.V = collections.defaultdict(float)    # value function for each state
         self.Q = collections.defaultdict(list)     # Q table
     
@@ -77,7 +77,12 @@ class ValueIterAgent:
     def traverse_tree(self):
         if self.env.is_over():
             chips = self.env.get_payoffs()
-            return chips[self.agent_id]
+            current_player = self.env.get_player_id()
+            if current_player == self.agent_id:
+                obs, legal_actions = self.get_state(current_player)
+                return chips[self.agent_id], obs
+            else:
+                return chips[self.agent_id], "other player"
 
         current_player = self.env.get_player_id()
         # compute the quality of previous state
@@ -90,12 +95,34 @@ class ValueIterAgent:
             self.env.step(action)
             Vstate = self.traverse_tree()
             self.env.step_back()
-            return Vstate
+            return Vstate, "other player"
         
         if current_player == self.agent_id:
             obs, legal_actions = self.get_state(current_player)
-            # if first time we encounter state initialize qualities
+            # update state space and Q table (initializing only)
             self.update_P_and_Q(obs, legal_actions, self.P, self.Q)
+
+            for action in legal_actions:
+                # Keep traversing the child state
+                self.env.step(action)
+                q, next_state = self.traverse_tree()
+                self.env.step_back()
+                if next_state not in self.P[obs][action]:   #next state first time recorded for current state
+                    self.P[obs][action][next_state] = [0, q, 1] #prob of next state, reward for this state, total times played this action
+                else:
+                    for i in self.P[obs][action]:
+                        
+                        times_visited_nxt_st = self.P[obs][action][next_state][0] * self.P[obs][action][next_state][2] + 1
+                        self.P[obs][action][next_state][2] += 1  #total times played this action
+                        self.P[obs][action][next_state][0] = times_visited_nxt_st / self.P[obs][action][next_state][2]  # prob of next state
+
+                        self.P[obs][action][i][2] += 1
+
+                    self.P[obs][action][next_state][1] = q      #TODO maybe modify this
+
+                for prob_next_st, next_st, rew_next_st, ctr in P[obs][action]:
+                    self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[next_st])
+
 
     @staticmethod
     def step(state):
@@ -148,29 +175,19 @@ class ValueIterAgent:
             for action in legal_actions:            # check all listed actions that can be done in this state
                 if action not in self.P[obs].keys():    # if any not listed in P so far add it
                     # initialize now will change later
-                    self.P[obs][action] = [[0,0,0,0]]   #prob_next_st, next_st, rew_next_st, num_visited_next_st
+                    #self.P[obs][action] = [[0,0,0,0]]   # {next_st: [prob_next_st, rew_next_st, num_visited_next_st]}
+                    self.P[obs][action] ={}
                 # now reset rewards of Q table for legal actions, will be recalculated 
                 self.Q[obs][action] = 0
         else:
             # new state found, add it to dicts and set appropriate values
-            self.P[obs] = {}
             self.Q[obs] = [-np.inf, -np.inf, -np.inf, -np.inf]
+
             for action in legal_actions:
-                self.P[obs][action] = [[0,0,0,0]]
+                #self.P[obs][action] = [[0,0,0,0]]
+                self.P[obs][action] ={}
                 self.Q[obs][action] = 0
             
-
-        if obs not in policy.keys() and obs not in self.qualities.keys():
-            tactions = np.array([-np.inf for action in range(self.env.num_actions)])
-            for action in range(self.env.num_actions):
-                if action in legal_actions:
-                    tactions[action] = 0
-            self.qualities[obs] = tactions
-            action_probs = softmax(tactions)
-            self.policy[obs] = action_probs
-        else:
-            action_probs = policy[obs].copy()
-        action_probs = remove_illegal(action_probs, legal_actions)
     
     def get_state(self, player_id):
         ''' Get state_str of the player
@@ -198,7 +215,7 @@ if __name__ == '__main__':
     x["state2"].append(2)
     x["state2"].append(6)
     x["state2"][0]=10
-    x["ff"]=[]
+    x["ff"]=[-np.inf,-np.inf,-np.inf,-2]
     ll = x.keys()
     print(x)
     print(x.keys())
@@ -222,12 +239,12 @@ if __name__ == '__main__':
     #         if i == len(x)-1:
     #             x[len(x)]= 4
     #             # print(x[3])
-    P = collections.__dict__
+
     P = {
 
     "state1": {
         "raise": [[0.9, "state2", 0.0, 9],           # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
-            [0.1, "state3", 0.5, 1]
+                  [0.1, "state3", 0.5, 1]
         ],
         "check": [[0.1, "state2", 1.0, 1],
             [0.8, "state3", -1.0, 8],
@@ -252,8 +269,11 @@ if __name__ == '__main__':
     if i in P:
         print("yes")
     pp.pprint(P)
-    k = P["state1"]["raise"]    # list
+    k = P["state1"]["check"]    # list
     print(k)
+    for i in k:                 #!!!!!!!!!!!!
+        if "state2" in i:
+            print("yes")
 
     if "state2" in k[0]:
         print("yes")
@@ -270,4 +290,20 @@ if __name__ == '__main__':
     # Q[1][0] = 4
 
     # print(np.max(Q, axis=1))   #returns the max of each row i.e. [3,4]
+    
+    # for prob_next_st, next_st, rew_next_st, ctr in P["state1"]["raise"]:
+    #     print(prob_next_st, next_st, rew_next_st, ctr)
+    thisdict = {}
+    thisdict["c"] = [2018,2]
+    thisdict["d"] = [1,3]
+    thisdict["c"][0] = 1
+    print(thisdict)
+    print(thisdict["c"])
+
+    z = thisdict.values()
+    print(thisdict.values())
+    for i in thisdict:
+        print(thisdict[i][0])
+ 
+
     
