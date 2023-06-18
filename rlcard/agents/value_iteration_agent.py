@@ -111,21 +111,27 @@ class ValueIterAgent:
                 self.env.step(action)
                 q, next_state = self.traverse_tree()
                 self.env.step_back()
-                if next_state not in self.P[obs][action]:   #next state first time recorded for current state
-                    self.P[obs][action][next_state] = [0, q, 1] #prob of next state, reward for this state, total times played this action
-                else:
-                    for i in self.P[obs][action]:
-                        
-                        times_visited_nxt_st = self.P[obs][action][next_state][0] * self.P[obs][action][next_state][2] + 1
-                        self.P[obs][action][next_state][2] += 1  #total times played this action
-                        self.P[obs][action][next_state][0] = times_visited_nxt_st / self.P[obs][action][next_state][2]  # prob of next state
+                
+                self.P[obs][action][1] +=1  #took action when in state obs one more time
+                if next_state not in self.P[obs][action][0].keys():   #next state first time recorded for current state
+                    self.P[obs][action][0][next_state] = [0, q, 1] #prob of next state, reward for this state, times visited this state 
+                else:   # I have visited again next state, after current state obs
+                    self.P[obs][action][0][next_state][2] += 1 
+                    self.P[obs][action][0][next_state][1] = (self.P[obs][action][0][next_state][1] + q) / 2     # q_new = (q_old + q) / 2
+                
+                for i in self.P[obs][action][0]:    #calculate again probabilities of each recorded next state when in current state obs and taken certain action
+                    self.P[obs][action][0][i][0] = self.P[obs][action][0][i][2] / self.P[obs][action][1]    #times visited next state/sum of all visits
 
-                        self.P[obs][action][i][2] += 1
+                for item in self.P[obs][action][0].items(): # for every next state after current state obs taking certain action 
+                    prob_next_st, rew_next_st, ctr = item[1]    
+                    nxt_st = item[0]
+                    self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st])
+                
+                #equivalent with the above
+                # for nxt_st in self.P[obs][action][0]:   # for every next state after current state obs taking certain action 
+                #     prob_next_st, rew_next_st, ctr = self.P[obs][action][0][nxt_st]
+                #     self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st])
 
-                    self.P[obs][action][next_state][1] = q      #TODO maybe modify this
-
-                for prob_next_st, next_st, rew_next_st, ctr in P[obs][action]:
-                    self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[next_st])
 
 
     @staticmethod
@@ -316,11 +322,18 @@ if __name__ == '__main__':
     v["st1"]["call"] = [{},0]
     print(v)
     v["st1"]["raise"][1] +=1
-    v["st1"]["raise"][0]["st2"] =[0,0,0,0]
-    v["st1"]["raise"][0]["st3"] =[0,0,0,0]
+    v["st1"]["raise"][0]["st2"] =[0,2,3,4]
+    v["st1"]["raise"][0]["st3"] =[10,50,60,70]
     print(v)
     v["st1"]["raise"][0]["st2"][0] =1
     pp.pprint(v)
     v["st2"]["raise"] = [{},0]
     pp.pprint(v)
     print(v["st1"].keys())
+    for nxt_st in v["st1"]["raise"][0]:
+        prob, rew, ctr,cc = v["st1"]["raise"][0][nxt_st]
+        print(nxt_st, prob, rew, ctr,cc)
+    for i in v["st1"]["raise"][0].items():
+        prob, rew, ctr,cc = i[1]
+        print(i[0])
+        print(i[1])
