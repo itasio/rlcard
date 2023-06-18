@@ -5,7 +5,7 @@ from scipy.special import softmax
 import os
 import pickle
 
-from rlcard.utils.utils import *
+#from rlcard.utils.utils import *
 '''
 P is the state space that we need for implementing value iteration
 P["state1","raise"] for example captures what happens if at state1 I take action: raise.
@@ -15,22 +15,26 @@ next state is about the next state the agent will be. It's not about the other p
 # P = {
 
 # "state1": {
-#     "raise": [  [0.9, "state2", 0.0, 9],           # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
-#                 [0.1, "state3", 0.5, 1]
+#     "raise": [ { "state2": [0.9, 0.0, 9],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
+#                  "state3": [0.1, 0.5, 1]
+#                }, ctr                           ctr: (num of times action raise was taken when in state1)
 #     ],
-#     "check": [ [0.1, "state2", 1.0, 1],
-#                [0.8, "state3", -1.0, 8],
-#                [0.1, "state4", 0.0, 1]
+#     "check": [ { "state2": [0.1, 1.0, 1],
+#                  "state3": [0.8, -1.0, 8],
+#                  "state4": [0.1, 0.0, 1]
+#                }, ctr
 #     ]
 # },
 
 # "state2": {
-#     "call": [[0.9, "state4", 0.0, 9], # prob of next state, next state, reward of next state, ctr(num of time visited next state)
-#         [0.1, "state3", 0.5, 1]
+#     "call": [ { "state6": [0.5, 0.0, 5],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
+#                  "state3": [0.5, 0.5, 5]
+#                }, ctr                           ctr: (num of times action raise was taken when in state1)
 #     ],
-#     "fold": [[0.1, "state3", 1.0, 1],
-#         [0.8, "state3", -1.0, 8],
-#         [0.1, "state4", 0.0, 1]
+#     "fold": [ { "state5": [0.1, 1.0, 1],
+#                  "state3": [0.8, -1.0, 8],
+#                  "state4": [0.1, 0.0, 1]
+#                }, ctr
 #     ]
 # }
 
@@ -54,7 +58,7 @@ class ValueIterAgent:
         self.agent_id = 0
         self.model_path = model_path
         self.iteration = 0
-        self.P = {}              # state space
+        self.P = collections.defaultdict(dict)              # state space
         self.V = collections.defaultdict(float)    # value function for each state
         self.Q = collections.defaultdict(list)     # Q table
     
@@ -176,7 +180,7 @@ class ValueIterAgent:
                 if action not in self.P[obs].keys():    # if any not listed in P so far add it
                     # initialize now will change later
                     #self.P[obs][action] = [[0,0,0,0]]   # {next_st: [prob_next_st, rew_next_st, num_visited_next_st]}
-                    self.P[obs][action] ={}
+                    self.P[obs][action] =[{},0] # so far zero times 
                 # now reset rewards of Q table for legal actions, will be recalculated 
                 self.Q[obs][action] = 0
         else:
@@ -185,7 +189,7 @@ class ValueIterAgent:
 
             for action in legal_actions:
                 #self.P[obs][action] = [[0,0,0,0]]
-                self.P[obs][action] ={}
+                self.P[obs][action] =[{},0] # so far zero times 
                 self.Q[obs][action] = 0
             
     
@@ -243,8 +247,10 @@ if __name__ == '__main__':
     P = {
 
     "state1": {
-        "raise": [[0.9, "state2", 0.0, 9],           # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
-                  [0.1, "state3", 0.5, 1]
+        "raise": [{"state2": [0.9, 0.0, 9], # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
+                   "state3": [0.1, 0.5, 1]
+                  }, 1
+
         ],
         "check": [[0.1, "state2", 1.0, 1],
             [0.8, "state3", -1.0, 8],
@@ -269,20 +275,20 @@ if __name__ == '__main__':
     if i in P:
         print("yes")
     pp.pprint(P)
-    k = P["state1"]["check"]    # list
+    k = P["state1"]["raise"][0]    # dict
     print(k)
-    for i in k:                 #!!!!!!!!!!!!
-        if "state2" in i:
-            print("yes")
+    l = k = P["state1"]["raise"][1]     # counter
+    print(l)
+   
 
-    if "state2" in k[0]:
-        print("yes")
-    else:
-        print("no")
-    if "bla" not in P["state1"].keys():
-        P["state1"]["bla"]=[[0,0,0,0]]
-    P["state1"]["bla"].append([1,1,1,1])
-    P["state1"]["bla"][0][0] = "hey"
+    # if "state2" in k[0]:
+    #     print("yes")
+    # else:
+    #     print("no")
+    # if "bla" not in P["state1"].keys():
+    #     P["state1"]["bla"]=[[0,0,0,0]]
+    # P["state1"]["bla"].append([1,1,1,1])
+    # P["state1"]["bla"][0][0] = "hey"
     pp.pprint(P)
     # Q = np.zeros((2, 4), dtype=np.float64)
     # Q[0][0] = 2
@@ -305,5 +311,16 @@ if __name__ == '__main__':
     for i in thisdict:
         print(thisdict[i][0])
  
-
-    
+    v = collections.defaultdict(dict)
+    v["st1"]["raise"] = [{},0]
+    v["st1"]["call"] = [{},0]
+    print(v)
+    v["st1"]["raise"][1] +=1
+    v["st1"]["raise"][0]["st2"] =[0,0,0,0]
+    v["st1"]["raise"][0]["st3"] =[0,0,0,0]
+    print(v)
+    v["st1"]["raise"][0]["st2"][0] =1
+    pp.pprint(v)
+    v["st2"]["raise"] = [{},0]
+    pp.pprint(v)
+    print(v["st1"].keys())
