@@ -54,10 +54,12 @@ class ValueIterAgent:
         self.use_raw = 2
         self.env = env
         self.conv_limit = conv_limit
+        self. conv = False
         self.gamma = gamma
         self.agent_id = 0
         self.model_path = model_path
         self.iteration = 0
+        self.states_discovered = 0
         self.P = collections.defaultdict(dict)              # state space
         self.V = collections.defaultdict(float)    # value function for each state (expected return of the best action for each state)
         self.Q = collections.defaultdict(list)     # Q table
@@ -67,9 +69,12 @@ class ValueIterAgent:
         ''' Do one iteration of value iteration
         '''
         self.iteration += 1
+        self.states_discovered = len(self.P)
         self.env.reset()
         self.find_agent()
         self.traverse_tree()
+        if self.conv:
+            print('Value iteration converged after {} iterations'.format(self.iteration))
 
     def find_agent(self):
         agents = self.env.get_agents()
@@ -81,7 +86,7 @@ class ValueIterAgent:
     def traverse_tree(self):
         if self.env.is_over():
             chips = self.env.get_payoffs()
-            current_player = self.env.get_player_id()
+            current_player = self.env.get_player_id()   # TODO if opponent folded who is curr player?
             if current_player == self.agent_id:
                 obs, legal_actions = self.get_state(current_player)
                 return chips[self.agent_id], obs
@@ -97,9 +102,11 @@ class ValueIterAgent:
 
             # Keep traversing the child state
             self.env.step(action)
-            Vstate = self.traverse_tree()
+            Vstate, next_state = self.traverse_tree()
+            if self.conv:
+                return Vstate, next_state
             self.env.step_back()
-            return Vstate, "other player"
+            return Vstate, next_state
         
         if current_player == self.agent_id:
             obs, legal_actions = self.get_state(current_player)
@@ -109,7 +116,9 @@ class ValueIterAgent:
             for action in legal_actions:
                 # Keep traversing the child state
                 self.env.step(action)
-                q, next_state = self.traverse_tree()
+                q, next_state = self.traverse_tree()    # I want my next state, not opponent's state
+                if self.conv:
+                    return q, next_state
                 self.env.step_back()
                 
                 self.P[obs][action][1] +=1  #took action when in state obs one more time
@@ -132,15 +141,18 @@ class ValueIterAgent:
                 #     prob_next_st, rew_next_st, ctr = self.P[obs][action][0][nxt_st]
                 #     self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st])
 
-                # TODO break statement
                 ll = list(self.Q.values())  # list of lists with Q values of each action per state
                 q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
                 v_vals = list(self.V.values())
-                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.gamma:
-                    pass # TODO found convergence must stop
+                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered == len(self.P):
+                    # converged and also no new states discovered in last training round
+                    self. conv = True
+                    break   # found convergence must stop
+                # Since i have not converged, i set new V(s)
                 for i, st in enumerate(self.Q):       # Setting V value for each state
                    # self.V[st] = np.max(self.Q[st])
                     self.V[st] = k[i]   # TODO check if it holds
+            return q, obs
 
     @staticmethod
     def step(state):
@@ -223,108 +235,6 @@ class ValueIterAgent:
         return state['obs'].tostring(), list(state['legal_actions'].keys())
 
 if __name__ == '__main__':
-    # x = collections.defaultdict(list)
-    # x["state1"].append(2)
-    # x["state1"].append(3)
-    # x["state1"].append(4)
-    # x["state1"].append(2)
-
-    # x["state2"].append(2)
-    # x["state2"].append(5)
-    # x["state2"].append(2)
-    # x["state2"].append(6)
-    # x["state2"][0]=10
-    # x["ff"]=[-np.inf,-np.inf,-np.inf,-2]
-    # ll = x.keys()
-    # print(x)
-    # print(x.keys())
-    # for i in x:
-    #     print(i)
-    #     print(x[i])
-    #     print(max(x[i]), x[i].index(max(x[i])))
-    #     # print max of each state and the index of it
-    # # print(x)
-    # # print(x["state1"])
-    # # print(x["state2"])
-    # # Q = np.zeros((3, 4))
-    # # print(Q)
-    # # x[2]=3
-    # # print(x.keys())
-    # # print(x.values())
-    # # print(x.items())
-    # # while True:
-    # #     for i in range(len(x)):
-    # #         print(x[i])
-    # #         if i == len(x)-1:
-    # #             x[len(x)]= 4
-    # #             # print(x[3])
-
-    # P = {
-
-    # "state1": {
-    #     "raise": [{"state2": [0.9, 0.0, 9], # prob of next state(ctr/sum_of_ctrs_for_this_action), next state, reward of next state, ctr(num of time visited next state)
-    #                "state3": [0.1, 0.5, 1]
-    #               }, 1
-
-    #     ],
-    #     "check": [[0.1, "state2", 1.0, 1],
-    #         [0.8, "state3", -1.0, 8],
-    #         [0.1, "state4", 0.0, 1]
-    #     ]
-    # },
-
-    # "state2": {
-    #     "call": [[0.9, "state4", 0.0, 9], # prob of next state, next state, reward of next state, ctr(num of time visited next state)
-    #         [0.1, "state3", 0.5, 1]
-    #     ],
-    #     "fold": [[0.1, "state3", 1.0, 1],
-    #         [0.8, "state3", -1.0, 8],
-    #         [0.1, "state4", 0.0, 1]
-    #     ]
-    # }
-
-    # }
-    # P["state3"] = 5
-    # print(P.keys())
-    # i = "state3"
-    # if i in P:
-    #     print("yes")
-    # pp.pprint(P)
-    # k = P["state1"]["raise"][0]    # dict
-    # print(k)
-    # l = k = P["state1"]["raise"][1]     # counter
-    # print(l)
-   
-
-    # # if "state2" in k[0]:
-    # #     print("yes")
-    # # else:
-    # #     print("no")
-    # # if "bla" not in P["state1"].keys():
-    # #     P["state1"]["bla"]=[[0,0,0,0]]
-    # # P["state1"]["bla"].append([1,1,1,1])
-    # # P["state1"]["bla"][0][0] = "hey"
-    # pp.pprint(P)
-    # # Q = np.zeros((2, 4), dtype=np.float64)
-    # # Q[0][0] = 2
-    # # Q[0][3] = 3
-    # # Q[1][0] = 4
-
-    # # print(np.max(Q, axis=1))   #returns the max of each row i.e. [3,4]
-    
-
-    # thisdict = {}
-    # thisdict["c"] = [2018,2]
-    # thisdict["d"] = [1,3]
-    # thisdict["c"][0] = 1
-    # print(thisdict)
-    # print(thisdict["c"])
-
-    # z = thisdict.values()
-    # print(thisdict.values())
-    # for i in thisdict:
-    #     print(thisdict[i][0])
- 
     v = collections.defaultdict(dict)           # P table
     v["st1"]["raise"] = [{},0]
     v["st1"]["call"] = [{},0]
@@ -361,9 +271,5 @@ if __name__ == '__main__':
     for st in qq:
         fl[st]  =np.max(qq[st])
     print(fl)
-    # z = list(fl.values())
-    # print(z)
-    # y= [2,3]
-    # print(np.subtract(z,y))
-    # print(np.abs(np.subtract(z,y)))
-    # print(np.max(np.abs(np.subtract(z,y))))
+
+
