@@ -112,11 +112,17 @@ class ValueIterAgent:
             obs, legal_actions = self.get_state(current_player)
             # update state space, V and Q table (initializing only)
             self.update_P_and_Q_and_V(obs, legal_actions)
+            q_mean = 0  # For holding mean q between legal actions in a state, that will be transferred to parent state of tree
 
             for action in legal_actions:
                 # Keep traversing the child state
                 self.env.step(action)
                 q, next_state = self.traverse_tree()    # I want my next state, not opponent's state
+                q_mean += q
+                if next_state == "other player":
+                    # this is my last state, game is finished and i took last action e.g. fold
+                    #next_state = obs    # Next state is my current state TODO here the action taken in this state is not recorded!
+                    next_state, _ = self.get_state(current_player)  # this way we pass in next state the info about action taken
                 if self.conv:
                     return q, next_state
                 self.env.step_back()
@@ -152,7 +158,7 @@ class ValueIterAgent:
                 for i, st in enumerate(self.Q):       # Setting V value for each state
                    # self.V[st] = np.max(self.Q[st])
                     self.V[st] = k[i]   # TODO check if it holds
-            return q, obs
+            return q_mean/len(legal_actions), obs
 
     @staticmethod
     def step(state):
