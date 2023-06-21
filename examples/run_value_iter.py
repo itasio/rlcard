@@ -47,7 +47,7 @@ def train(args):
 
         ),
     )
-    agent.load()  # If we have saved model, we first load the model
+    #agent.load()  # If we have saved model, we first load the model
 
     # Evaluate Value Iteration
     eval_env.set_agents([
@@ -66,7 +66,7 @@ def train(args):
             print('\rIteration {}'.format(episode), end='')
             # Evaluate the performance. Play with Random agents.
             if episode % args.evaluate_every == 0:
-                agent.save()  # Save model
+    #            agent.save()  # Save model
                 logger.log_performance(
                     episode,
                     tournament(
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         type=str,
         default='experiments/new_limit_holdem_vi_result/',
     )
-
+ 
     args = parser.parse_args()
 
     train(args)

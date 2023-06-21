@@ -72,6 +72,9 @@ class ValueIterAgent:
         self.states_discovered = len(self.P)
         self.env.reset()
         self.find_agent()
+        if self.conv:
+            # print('Value iteration converged after {} iterations'.format(self.iteration))
+            return
         self.traverse_tree()
         if self.conv:
             print('Value iteration converged after {} iterations'.format(self.iteration))
@@ -112,17 +115,21 @@ class ValueIterAgent:
             obs, legal_actions = self.get_state(current_player)
             # update state space, V and Q table (initializing only)
             self.update_P_and_Q_and_V(obs, legal_actions)
-            q_mean = 0  # For holding mean q between legal actions in a state, that will be transferred to parent state of tree
-
+            # q_mean = 0  # For holding mean q between legal actions in a state, that will be transferred to parent state of tree
+            q_median = []
             for action in legal_actions:
                 # Keep traversing the child state
                 self.env.step(action)
                 q, next_state = self.traverse_tree()    # I want my next state, not opponent's state
-                q_mean += q
+                # q_mean += q
+                q_median.append(q)
                 if next_state == "other player":
                     # this is my last state, game is finished and i took last action e.g. fold
                     #next_state = obs    # Next state is my current state TODO here the action taken in this state is not recorded!
-                    next_state, _ = self.get_state(current_player)  # this way we pass in next state the info about action taken
+                    next_state, next_st_legal_actions = self.get_state(current_player)  # this way we pass in next state the info about action taken
+                    self.update_P_and_Q_and_V(next_state, next_st_legal_actions)    # to record the last state into dicts
+                else:
+                    self.update_P_and_Q_and_V(next_state, legal_actions)    # to record the last state into dicts
                 if self.conv:
                     return q, next_state
                 self.env.step_back()
@@ -150,15 +157,16 @@ class ValueIterAgent:
                 ll = list(self.Q.values())  # list of lists with Q values of each action per state
                 q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
                 v_vals = list(self.V.values())
-                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered == len(self.P):
+                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered >=5000:
                     # converged and also no new states discovered in last training round
                     self. conv = True
                     break   # found convergence must stop
                 # Since i have not converged, i set new V(s)
                 for i, st in enumerate(self.Q):       # Setting V value for each state
                    # self.V[st] = np.max(self.Q[st])
-                    self.V[st] = k[i]   # TODO check if it holds
-            return q_mean/len(legal_actions), obs
+                    self.V[st] = q_vals[i]
+            # return q_mean/len(legal_actions), obs
+            return np.median(q_median), obs
 
     @staticmethod
     def step(state):
@@ -170,7 +178,9 @@ class ValueIterAgent:
         Returns:
             action (int): The action predicted (randomly chosen) by the random agent
         '''
-        return np.random.choice(list(state['legal_actions'].keys()))
+        #return np.random.choice(list(state['legal_actions'].keys()))
+        return np.random.choice(state['raw_legal_actions'])
+
 
     def eval_step(self, state):
         ''' Predict the action given the current state for evaluation.
@@ -183,7 +193,8 @@ class ValueIterAgent:
             action (int): The action predicted (randomly chosen) by the random agent
             probs (list): The list of action probabilities
         '''
-        probs = [0 for _ in range(self.num_actions)]
+        #probs = [0 for _ in range(self.num_actions)]
+        probs = [0 for _ in range(self.env.num_actions)]
         for i in state['legal_actions']:
             probs[i] = 1/len(state['legal_actions'])
 
@@ -238,7 +249,8 @@ class ValueIterAgent:
                 legal_actions (list): Indices of legal actions
         '''
         state = self.env.get_state(player_id)
-        return state['obs'].tostring(), list(state['legal_actions'].keys())
+        # return state['obs'].tostring(), list(state['legal_actions'].keys())
+        return str(state['raw_obs']), list(state['legal_actions'].keys())
 
 if __name__ == '__main__':
     v = collections.defaultdict(dict)           # P table
@@ -274,8 +286,16 @@ if __name__ == '__main__':
     fl = collections.defaultdict(float)     # V table
     fl["st1"] = 0
     fl["st2"] = 0
-    for st in qq:
-        fl[st]  =np.max(qq[st])
+    # for st in qq:
+    #     fl[st]  =np.max(qq[st])
     print(fl)
-
+    ll = list(qq.values())  # list of lists with Q values of each action per state
+    q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
+    v_vals = list(fl.values())
+    v_vals = q_vals
+    print(fl)
+    for i, st in enumerate(qq):       # Setting V value for each state
+        # self.V[st] = np.max(self.Q[st])
+        fl[st] = q_vals[i]
+    print(fl)
 
