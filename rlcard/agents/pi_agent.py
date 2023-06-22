@@ -84,6 +84,8 @@ dp
             return False
         count = 0
         for key in p1:
+            pr1 = p1[key]
+            pr2 = p2[key]
             if not np.array_equal(p1[key], p2[key]):
                 count += 1
         if count > 0:
@@ -119,16 +121,20 @@ dp
         for rank1 in self.rank_list:
             for rank2 in self.rank_list:
                 for rank3 in self.rank_list:
-                    self.env.reset(self.agent_id, self.agent_id, Card(suit, rank1), Card(suit, rank2),
-                                   Card(suit, rank3))
-                    Vtotal += self.traverse_tree()
+                    for rank4 in self.rank_list:
+                        self.env.reset(self.agent_id, self.agent_id, Card(suit, rank1), Card(suit, rank2),
+                                       Card(suit, rank3), Card(suit, rank4))
+                        self.rank = rank4
+                        Vtotal += self.traverse_tree()
         player = (self.agent_id + 1) % self.env.num_players
         for rank1 in self.rank_list:
             for rank2 in self.rank_list:
                 for rank3 in self.rank_list:
-                    self.env.reset(player, self.agent_id, Card(suit, rank1), Card(suit, rank2),
-                                   Card(suit, rank3))
-                    Vtotal += self.traverse_tree()
+                    for rank4 in self.rank_list:
+                        self.env.reset(player, self.agent_id, Card(suit, rank1), Card(suit, rank2),
+                                       Card(suit, rank3), Card(suit, rank4))
+                        self.rank = rank4
+                        Vtotal += self.traverse_tree()
         print(Vtotal)
         return Vtotal
 
@@ -141,41 +147,41 @@ dp
         current_player = self.env.get_player_id()
         # compute the q of previous state
         if not current_player == self.agent_id:
-            vtotal = 0
-            if self.env.op_has_card(current_player):
-                self.flag = 1
-                for rank in self.rank_list:
-                    self.rank = rank
-                    self.env.change_op_hand(Card('S', rank), current_player)
-                    # other agent move
-                    obs, legal_actions = self.get_state(current_player)
-                    state = self.env.get_state(current_player)
-                    action_probs = self.env.agents[current_player].get_action_probs(state, self.env.num_actions)
-                    Vstate = 0
-                    for action in legal_actions:
-                        prob = action_probs[action]
-                        # Keep traversing the child state
-                        self.env.step(action)
-                        v = self.traverse_tree()
-                        Vstate += v * prob
-                        self.env.step_back()
-                    vtotal += Vstate*self.card_prob
-                self.flag = 0
-                return vtotal*self.gamma
-            else:
-                # other agent move
-                obs, legal_actions = self.get_state(current_player)
-                state = self.env.get_state(current_player)
-                action_probs = self.env.agents[current_player].get_action_probs(state, self.env.num_actions)
-                Vstate = 0
-                for action in legal_actions:
-                    prob = action_probs[action]
-                    # Keep traversing the child state
-                    self.env.step(action)
-                    v = self.traverse_tree()
-                    Vstate += v * prob
-                    self.env.step_back()
-                return Vstate*self.gamma
+            # vtotal = 0
+            # if self.env.op_has_card(current_player):
+            #     self.flag = 1
+            #     for rank in self.rank_list:
+            #         self.rank = rank
+            #         self.env.change_op_hand(Card('S', rank), current_player)
+            #         # other agent move
+            #         obs, legal_actions = self.get_state(current_player)
+            #         state = self.env.get_state(current_player)
+            #         action_probs = self.env.agents[current_player].get_action_probs(state, self.env.num_actions)
+            #         Vstate = 0
+            #         for action in legal_actions:
+            #             prob = action_probs[action]
+            #             # Keep traversing the child state
+            #             self.env.step(action)
+            #             v = self.traverse_tree()
+            #             Vstate += v * prob
+            #             self.env.step_back()
+            #         vtotal += Vstate*self.card_prob
+            #     self.flag = 0
+            #     return vtotal*self.gamma
+            # else:
+            # other agent move
+            obs, legal_actions = self.get_state(current_player)
+            state = self.env.get_state(current_player)
+            action_probs = self.env.agents[current_player].get_action_probs(state, self.env.num_actions)
+            Vstate = 0
+            for action in legal_actions:
+                prob = action_probs[action]
+                # Keep traversing the child state
+                self.env.step(action)
+                v = self.traverse_tree()
+                Vstate += v * prob
+                self.env.step_back()
+            return Vstate*self.gamma
 
         if current_player == self.agent_id:
             quality = {}
@@ -211,8 +217,8 @@ dp
             q[i] = quality[i]
 
         new_policy = softmax(q)
-        if self.flag == 1:
-            obs = (obs, self.rank)
+        #if self.flag == 1:
+        obs = (obs, self.rank)
         self.policy[obs] = new_policy
 
 
@@ -232,8 +238,8 @@ dp
                 legal_actions (list): Indices of legal actions
         '''
 
-        if self.flag == 1:
-            obs = (obs, self.rank)
+        #if self.flag == 1:
+        obs = (obs, self.rank)
         # if new state initialize policy
         if obs not in policy.keys():
             best_action = random.choice(legal_actions)
