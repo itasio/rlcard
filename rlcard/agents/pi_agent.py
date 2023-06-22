@@ -17,7 +17,7 @@ class PIAgent:
 dp
          Args:
          env (Env): Env class
-         converge se 2 iterations
+         converge se 4 iterations
         '''
 
         self.gamma = g
@@ -48,6 +48,35 @@ dp
             if self.iteration == 10:
                 break
         print('Optimal policy found: State space length: %d after %d iterations' % (len(self.policy), self.iteration))
+        self.remake_policy()
+
+    def remake_policy(self):
+        ''' Take the policy that has key: tuple(obs, opponent_card) and for every obs compute average policy
+        for all possible opponent cards in key: obs
+        '''
+        new_policy = collections.defaultdict(list)
+        old_policy = self.policy
+
+        for key in old_policy:
+            if isinstance(key, tuple):
+                obs, _ = key
+            else:
+                obs = key
+            new_policy = self._policy_sum(new_policy, old_policy[key], obs)
+        self.policy = new_policy
+
+    @staticmethod
+    def _policy_sum(policy, values, obs):
+        if obs not in policy.keys():
+            policy[obs] = values
+            return policy
+        else:
+            old_values = policy[obs]
+            average_values = np.mean([values, old_values], axis=0)
+            policy[obs] = average_values
+            return policy
+
+
 
     def compare_policys(self, p1, p2):
         if p1.keys() != p2.keys():

@@ -44,12 +44,12 @@ def train(args):
     # Evaluate PI
     eval_env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
 
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=100,
+        default=10,
     )
 
 
