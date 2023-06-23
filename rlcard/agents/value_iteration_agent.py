@@ -5,40 +5,59 @@ from scipy.special import softmax
 import os
 import pickle
 
-#from rlcard.utils.utils import *
+from rlcard.utils.utils import *
 '''
 P is the state space that we need for implementing value iteration
 P["state1","raise"] for example captures what happens if at state1 I take action: raise.
 next state is about the next state the agent will be. It's not about the other player's state
+
+
+P = {
+
+"state1": {
+    "raise": [ { "state2": [0.9, 0.0, 9],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
+                 "state3": [0.1, 0.5, 1]
+               }, ctr                           ctr: (num of times action raise was taken when in state1)
+    ],
+    "check": [ { "state2": [0.1, 1.0, 1],
+                 "state3": [0.8, -1.0, 8],
+                 "state4": [0.1, 0.0, 1]
+               }, ctr
+    ]
+},
+
+"state2": {
+    "call": [ { "state6": [0.5, 0.0, 5],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
+                 "state3": [0.5, 0.5, 5]
+               }, ctr                           ctr: (num of times action raise was taken when in state1)
+    ],
+    "fold": [ { "state5": [0.1, 1.0, 1],
+                 "state3": [0.8, -1.0, 8],
+                 "state4": [0.1, 0.0, 1]
+               }, ctr
+    ]
+}
+
+}
+
+Q table captures the values of actions for all possible actions in the enviroment
+In each game round we can't examine each possible state,
+hence we reset to zero in each round only the values of action of states that we will take. The rest stay the same  
+Q = {
+    "state1": [2,3,4,2],    # "state1": [reward for action 0,reward for action 1, reward for action 2, reward for action 3]
+    "state2": [2,5,2,6],    # "state2": [reward for action 0,reward for action 1, reward for action 2, reward for action 3]
+    "state3": [2,3,4,2],    # "state3": [reward for action 0,reward for action 1, reward for action 2, reward for action 3]
+}
+
+V table captures the expected return of the best action for each state and also what action is provides that
+available actions: {0,1,2,3} ->{call, raise, fold, check}
+V = {
+    "state1": [2.4, 0],     # "state1": [reward for best action when in state1, action to take when in state1]
+    "state2": [-1,2],       # "state2": [reward for best action when in state2, action to take when in state2]
+    "state3": [4, 3],       # "state3": [reward for best action when in state3, action to take when in state3]
+}
+
 '''
-
-# P = {
-
-# "state1": {
-#     "raise": [ { "state2": [0.9, 0.0, 9],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
-#                  "state3": [0.1, 0.5, 1]
-#                }, ctr                           ctr: (num of times action raise was taken when in state1)
-#     ],
-#     "check": [ { "state2": [0.1, 1.0, 1],
-#                  "state3": [0.8, -1.0, 8],
-#                  "state4": [0.1, 0.0, 1]
-#                }, ctr
-#     ]
-# },
-
-# "state2": {
-#     "call": [ { "state6": [0.5, 0.0, 5],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
-#                  "state3": [0.5, 0.5, 5]
-#                }, ctr                           ctr: (num of times action raise was taken when in state1)
-#     ],
-#     "fold": [ { "state5": [0.1, 1.0, 1],
-#                  "state3": [0.8, -1.0, 8],
-#                  "state4": [0.1, 0.0, 1]
-#                }, ctr
-#     ]
-# }
-
-# }
 
 class ValueIterAgent:
     ''' An agent that will play according to value iteration algorithm,
@@ -147,7 +166,7 @@ class ValueIterAgent:
                 for item in self.P[obs][action][0].items(): # for every next state after current state obs taking certain action 
                     prob_next_st, rew_next_st, ctr = item[1]    
                     nxt_st = item[0]
-                    self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st])
+                    self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st][0])
                 
                 #equivalent with the above
                 # for nxt_st in self.P[obs][action][0]:   # for every next state after current state obs taking certain action 
@@ -156,15 +175,18 @@ class ValueIterAgent:
 
                 ll = list(self.Q.values())  # list of lists with Q values of each action per state
                 q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
-                v_vals = list(self.V.values())
-                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered >=5000:
+                # v_vals = list(self.V.values())
+                v_vals = [item[0] for item in list(self.V.values())]    # list of rewards in V 
+                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered >= 3000:
                     # converged and also no new states discovered in last training round
                     self. conv = True
                     break   # found convergence must stop
                 # Since i have not converged, i set new V(s)
-                for i, st in enumerate(self.Q):       # Setting V value for each state
-                   # self.V[st] = np.max(self.Q[st])
-                    self.V[st] = q_vals[i]
+                q_vals_ind = np.argmax(ll, axis = 1)    # index of action which provides the maximum expected reward for each state as calculated in Q table
+                for i, st in enumerate(self.Q):         # Setting V value for each state
+                    self.V[st][1] = q_vals_ind[i]       # action that provides maximum expected reward when at state st
+                    self.V[st][0] = q_vals[i]           # maximum expected reward when at state st
+                    # self.V[st] = np.max(self.Q[st])
             # return q_mean/len(legal_actions), obs
             return np.median(q_median), obs
 
@@ -179,7 +201,7 @@ class ValueIterAgent:
             action (int): The action predicted (randomly chosen) by the random agent
         '''
         #return np.random.choice(list(state['legal_actions'].keys()))
-        return np.random.choice(state['raw_legal_actions'])
+        return np.random.choice(state['raw_legal_actions'])     # i.e. 'raise' / 'check' etc
 
 
     def eval_step(self, state):
@@ -193,15 +215,40 @@ class ValueIterAgent:
             action (int): The action predicted (randomly chosen) by the random agent
             probs (list): The list of action probabilities
         '''
-        #probs = [0 for _ in range(self.num_actions)]
-        probs = [0 for _ in range(self.env.num_actions)]
-        for i in state['legal_actions']:
-            probs[i] = 1/len(state['legal_actions'])
+        if not self.conv:   # if value iteration has not converged
+            probs = [0 for _ in range(self.env.num_actions)]
+            for i in state['legal_actions']:
+                probs[i] = 1/len(state['legal_actions'])
 
-        info = {}
-        info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
+            info = {}
+            info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
 
-        return self.step(state), info
+            return self.step(state), info
+        else:
+            obs, legal_actions = self.get_state(self.agent_id)
+            if obs not in self.V:
+                return self.step(state), {}
+            best_action_num = self.V[obs][1]
+            best_action = self.get_action(best_action_num)
+            if best_action in state['raw_legal_actions']:   # if our best action for this state is available take it
+                return best_action, {}
+            else:                                           # otherwise play random
+                return self.step(state), {}
+
+    def get_action(self, num):
+        if num == 0:
+            return 'call'
+        elif num == 1:
+            return 'raise'
+        elif num == 1:
+            return 'fold'
+        elif num == 3:
+            return 'check'
+        else:
+            raise Exception("Unrecognised action")
+
+
+
     
     def update_P_and_Q_and_V(self, obs, legal_actions):
         '''
@@ -213,7 +260,7 @@ class ValueIterAgent:
             1) Add new state and rewards for its legal actions(set to zero) or
             2) Update rewards (set to zero) of legal actions for existing state 
 
-        For V: If new state found add it to V with expected return 0
+        For V: If new state found add it to V with expected return 0 for arbitrary action in {0,1,2,3}. Here I suppose 0
         Args:
             obs (str): state_str
             legal_actions (list): List of legel actions
@@ -235,7 +282,7 @@ class ValueIterAgent:
                 #self.P[obs][action] = [[0,0,0,0]]
                 self.P[obs][action] =[{},0] # so far zero times 
                 self.Q[obs][action] = 0
-            self.V[obs] = 0
+            self.V[obs] = [0,0]
     
     def get_state(self, player_id):
         ''' Get state_str of the player
@@ -283,19 +330,23 @@ if __name__ == '__main__':
     k = np.max(ll, axis = 1)    #to be assigned to V
     print(k)
 
-    fl = collections.defaultdict(float)     # V table
-    fl["st1"] = 0
-    fl["st2"] = 0
+    fl = collections.defaultdict(int)     # V table
+    fl["st1"] = [2,4]
+    fl["st2"] = [3,5]
+    # fl["st1"] = 0
+    # fl["st2"] = 0
     # for st in qq:
     #     fl[st]  =np.max(qq[st])
     print(fl)
     ll = list(qq.values())  # list of lists with Q values of each action per state
     q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
+    q_vals_ind = np.argmax(ll, axis = 1)
     v_vals = list(fl.values())
+    v_vals = [item[0] for item in list(fl.values())]
     v_vals = q_vals
     print(fl)
     for i, st in enumerate(qq):       # Setting V value for each state
         # self.V[st] = np.max(self.Q[st])
-        fl[st] = q_vals[i]
+        fl[st][0] = q_vals[i]
+        fl[st][1] = q_vals_ind[i]
     print(fl)
-
