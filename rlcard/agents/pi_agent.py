@@ -48,7 +48,7 @@ dp
             if self.iteration == 10:
                 break
         print('Optimal policy found: State space length: %d after %d iterations' % (len(self.policy), self.iteration))
-        self.remake_policy()
+        #self.remake_policy()
 
     def remake_policy(self):
         ''' Take the policy that has key: tuple(obs, opponent_card) and for every obs compute average policy
@@ -231,8 +231,7 @@ dp
         obs = (obs, self.rank)
         self.policy[obs] = new_policy
 
-
-    def action_probs(self, obs, legal_actions, policy):
+    def action_probs(self, obs, legal_actions, policy, cardrank=None):
         ''' Obtain the action probabilities of the current state
 
         Args:
@@ -247,18 +246,30 @@ dp
                 action_probs(numpy.array): The action probabilities
                 legal_actions (list): Indices of legal actions
         '''
-
-        #if self.flag == 1:
-        obs = (obs, self.rank)
-        # if new state initialize policy
-        if obs not in policy.keys():
-            best_action = random.choice(legal_actions)
-            #best_action = np.argmax(tactions)
-            action_probs = np.array([0 for action in range(self.env.num_actions)])
-            action_probs[best_action] = 1
-            self.policy[obs] = action_probs
+        if cardrank is None:
+            if self.flag == 1:
+                obs = (obs, self.rank)
+            # if new state initialize policy
+            if obs not in policy.keys():
+                best_action = random.choice(legal_actions)
+                # best_action = np.argmax(tactions)
+                action_probs = np.array([0 for action in range(self.env.num_actions)])
+                action_probs[best_action] = 1
+                self.policy[obs] = action_probs
+            else:
+                action_probs = policy[obs].copy()
         else:
-            action_probs = policy[obs].copy()
+            # if obs in policy.keys():
+            #     action_probs = policy[obs].copy()
+            #     print('1')
+            # else:
+            obs1 = (obs, cardrank)
+            if obs1 in policy.keys():
+                action_probs = policy[obs1].copy()
+                #print('1')
+            else:
+                action_probs = policy[obs].copy()
+                #print('2')
         action_probs = remove_illegal(action_probs, legal_actions)
         return action_probs
 
@@ -273,8 +284,10 @@ dp
             action (int): Predicted action
             info (dict): A dictionary containing information
         '''
-
-        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy)
+        self.find_agent()
+        other_agent = (self.agent_id+1) % self.env.num_players
+        cardrank = self.env.get_card(other_agent)
+        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy, cardrank)
         # action = np.random.choice(len(probs), p=probs)
         action = np.argmax(probs)
 

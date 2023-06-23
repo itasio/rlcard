@@ -185,7 +185,9 @@ class Env(object):
         '''
         return self.game.get_player_id()
 
-
+    def get_card(self, player_id):
+        card = self.game.op_hand(player_id)
+        return card.rank
     def get_state(self, player_id):
         ''' Get the state given player id
 
