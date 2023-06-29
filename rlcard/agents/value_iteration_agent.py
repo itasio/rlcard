@@ -178,7 +178,7 @@ class ValueIterAgent:
                 q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
                 # v_vals = list(self.V.values())
                 v_vals = [item[0] for item in list(self.V.values())]    # list of rewards in V 
-                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered >= 3000:
+                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered == len(self.P):
                     # converged and also no new states discovered in last training round
                     self. conv = True
                     break   # found convergence must stop
@@ -216,25 +216,26 @@ class ValueIterAgent:
             action (int): The action predicted (randomly chosen) by the random agent
             probs (list): The list of action probabilities
         '''
-        if not self.conv:   # if value iteration has not converged
-            probs = [0 for _ in range(self.env.num_actions)]
-            for i in state['legal_actions']:
-                probs[i] = 1/len(state['legal_actions'])
+        # if not self.conv:   # if value iteration has not converged
+        #     probs = [0 for _ in range(self.env.num_actions)]
+        #     for i in state['legal_actions']:
+        #         probs[i] = 1/len(state['legal_actions'])
 
-            info = {}
-            info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
+        #     info = {}
+        #     info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
 
-            return self.step(state), info
-        else:
-            obs, legal_actions = self.get_state(self.agent_id)
-            if obs not in self.V:
-                return self.step(state), {}
-            best_action_num = self.V[obs][1]
-            best_action = self.get_action(best_action_num)
-            if best_action in state['raw_legal_actions']:   # if our best action for this state is available take it
-                return best_action, {}
-            else:                                           # play randomly
-                return self.step(state),{}
+        #     return self.step(state), info
+        # else:
+        # obs, legal_actions = self.get_state(self.agent_id)
+        obs, legal_actions = str(state['raw_obs']), list(state['legal_actions'].keys())
+        if obs not in self.V:
+            return self.step(state), {}
+        best_action_num = self.V[obs][1]
+        best_action = self.get_action(best_action_num)
+        if best_action in state['raw_legal_actions']:   # if our best action for this state is available take it
+            return best_action, {}
+        else:                                           # play randomly
+            return self.step(state),{}
 
 
 
@@ -243,7 +244,7 @@ class ValueIterAgent:
             return 'call'
         elif num == 1:
             return 'raise'
-        elif num == 1:
+        elif num == 2:
             return 'fold'
         elif num == 3:
             return 'check'

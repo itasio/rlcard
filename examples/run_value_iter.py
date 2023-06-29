@@ -55,15 +55,15 @@ def train(args):
     # Evaluate Value Iteration
     eval_env.set_agents([
         agent,
-        # ThresholdAgent(num_actions=env.num_actions),
-        RandomAgent(num_actions=env.num_actions)
+        ThresholdAgent(num_actions=env.num_actions),
+        # RandomAgent(num_actions=env.num_actions)
         # ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     env.set_agents([
         agent,
-        # ThresholdAgent(num_actions=env.num_actions),
-        RandomAgent(num_actions=env.num_actions)
+        ThresholdAgent(num_actions=env.num_actions),
+        # RandomAgent(num_actions=env.num_actions)
         # ThresholdAgent2(num_actions=env.num_actions)
     ])
 
