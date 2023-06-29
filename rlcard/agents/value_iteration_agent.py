@@ -29,7 +29,7 @@ P = {
 "state2": {
     "call": [ { "state6": [0.5, 0.0, 5],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
                  "state3": [0.5, 0.5, 5]
-               }, ctr                           ctr: (num of times action raise was taken when in state1)
+               }, ctr                           ctr: (num of times action call was taken when in state2)
     ],
     "fold": [ { "state5": [0.1, 1.0, 1],
                  "state3": [0.8, -1.0, 8],
@@ -40,7 +40,7 @@ P = {
 
 }
 
-Q table captures the values of actions for all possible actions in the enviroment
+Q table captures the values of all actions for all possible states in the enviroment
 In each game round we can't examine each possible state,
 hence we reset to zero in each round only the values of action of states that we will take. The rest stay the same  
 Q = {
@@ -64,7 +64,7 @@ class ValueIterAgent:
         in order to find optimal policy
     '''
 
-    def __init__(self, env, model_path='./vi_model', gamma=0.8, conv_limit=1e-10):
+    def __init__(self, env, model_path='./vi_model', gamma=0.6, conv_limit=1e-10):
         ''' Initilize the value iteration agent
 
         Args:
@@ -108,12 +108,12 @@ class ValueIterAgent:
     def traverse_tree(self):
         if self.env.is_over():
             chips = self.env.get_payoffs()
-            current_player = self.env.get_player_id()   # TODO if opponent folded who is curr player?
+            current_player = self.env.get_player_id()
             if current_player == self.agent_id:
                 obs, legal_actions = self.get_state(current_player)
-                return chips[self.agent_id], obs
+                return chips[self.agent_id], obs, True
             else:
-                return chips[self.agent_id], "other player"
+                return chips[self.agent_id], "other player", True
 
         current_player = self.env.get_player_id()
         # compute the quality of previous state
@@ -124,11 +124,11 @@ class ValueIterAgent:
 
             # Keep traversing the child state
             self.env.step(action)
-            Vstate, next_state = self.traverse_tree()
+            Vstate, next_state, terminal = self.traverse_tree()
             if self.conv:
-                return Vstate, next_state
+                return Vstate, next_state, terminal
             self.env.step_back()
-            return Vstate, next_state
+            return Vstate, next_state, terminal
         
         if current_player == self.agent_id:
             obs, legal_actions = self.get_state(current_player)
@@ -139,18 +139,19 @@ class ValueIterAgent:
             for action in legal_actions:
                 # Keep traversing the child state
                 self.env.step(action)
-                q, next_state = self.traverse_tree()    # I want my next state, not opponent's state
+                q, next_state, terminal = self.traverse_tree()    # I want my next state, not opponent's state
                 # q_mean += q
                 q_median.append(q)
-                if next_state == "other player":
-                    # this is my last state, game is finished and i took last action e.g. fold
-                    #next_state = obs    # Next state is my current state TODO here the action taken in this state is not recorded!
-                    next_state, next_st_legal_actions = self.get_state(current_player)  # this way we pass in next state the info about action taken
-                    self.update_P_and_Q_and_V(next_state, next_st_legal_actions)    # to record the last state into dicts
-                else:
-                    self.update_P_and_Q_and_V(next_state, legal_actions)    # to record the last state into dicts
+                if terminal:                    # If next state is terminal we should update P, Q, V 
+                    if next_state == "other player":
+                        # this is my last state, game is finished and i took last action e.g. fold
+                        #next_state = obs    # Next state is my current state TODO here the action taken in this state is not recorded!
+                        next_state, next_st_legal_actions = self.get_state(current_player)  # this way we pass in next state the info about action taken
+                        self.update_P_and_Q_and_V(next_state, next_st_legal_actions, terminal, q)    # to record the last state into dicts
+                    else:
+                        self.update_P_and_Q_and_V(next_state, legal_actions, terminal, q)    # to record the last state into dicts
                 if self.conv:
-                    return q, next_state
+                    return q, next_state, False
                 self.env.step_back()
                 
                 self.P[obs][action][1] +=1  #took action when in state obs one more time
@@ -188,7 +189,7 @@ class ValueIterAgent:
                     self.V[st][0] = q_vals[i]           # maximum expected reward when at state st
                     # self.V[st] = np.max(self.Q[st])
             # return q_mean/len(legal_actions), obs
-            return np.median(q_median), obs
+            return np.median(q_median), obs, False
 
     @staticmethod
     def step(state):
@@ -232,8 +233,10 @@ class ValueIterAgent:
             best_action = self.get_action(best_action_num)
             if best_action in state['raw_legal_actions']:   # if our best action for this state is available take it
                 return best_action, {}
-            else:                                           # otherwise play random
-                return self.step(state), {}
+            else:                                           # play randomly
+                return self.step(state),{}
+
+
 
     def get_action(self, num):
         if num == 0:
@@ -250,7 +253,7 @@ class ValueIterAgent:
 
 
     
-    def update_P_and_Q_and_V(self, obs, legal_actions):
+    def update_P_and_Q_and_V(self, obs, legal_actions, terminal = False, q = 0):
         '''
         For State Space P:
             1) add new state and actions for it, or
@@ -282,7 +285,11 @@ class ValueIterAgent:
                 #self.P[obs][action] = [[0,0,0,0]]
                 self.P[obs][action] =[{},0] # so far zero times 
                 self.Q[obs][action] = 0
-            self.V[obs] = [0,0]
+            if terminal:        # a new terminal state is found, set it's value equals to q for an arbitraty action_num suppose 0->call
+                self.V[obs] = [q,0]
+                self.Q[obs] = [q, q, q, q]  # setting q of new terminal state
+            else:
+                self.V[obs] = [0,0]
     
     def get_state(self, player_id):
         ''' Get state_str of the player

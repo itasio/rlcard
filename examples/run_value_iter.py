@@ -8,8 +8,11 @@ import argparse
 
 import rlcard
 from rlcard.agents import (
-    ThresholdAgent
+    ThresholdAgent,
+    ThresholdAgent2,
+    RandomAgent,
 )
+
 from rlcard.agents.value_iteration_agent import ValueIterAgent
 from rlcard.utils import (
     set_seed,
@@ -52,12 +55,16 @@ def train(args):
     # Evaluate Value Iteration
     eval_env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        # ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions)
+        # ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        # ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions)
+        # ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     # Start training
@@ -93,12 +100,12 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=3000,
+        default=6000,
     )
     parser.add_argument(
         '--num_eval_games',
         type=int,
-        default=2000,
+        default=1000,
     )
     parser.add_argument(
         '--evaluate_every',
