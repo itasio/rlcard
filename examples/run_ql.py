@@ -48,12 +48,12 @@ def train(args):
     # Evaluate Ql
     eval_env.set_agents([
         agent,
-        RandomAgent(num_actions=env.num_actions),
+        ThresholdAgent(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent2(num_actions=env.num_actions),
+        ThresholdAgent(num_actions=env.num_actions),
     ])
 
     # Start training
@@ -71,7 +71,7 @@ def train(args):
                     )[0]
                 )
                 # print(agent.epsilon)
-                print(agent.v)
+                #print(agent.v)
             agent.train()
 
 

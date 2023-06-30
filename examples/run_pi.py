@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_eval_games',
         type=int,
-        default=2000,
+        default=3000,
     )
     parser.add_argument(
         '--log_dir',
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=10,
+        default=20,
     )
 
 

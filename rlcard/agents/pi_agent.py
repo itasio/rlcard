@@ -1,5 +1,6 @@
 import collections
 
+import numpy as np
 from numpy import random
 from scipy.special import softmax
 import os
@@ -42,7 +43,7 @@ dp
         while True:
             #k += 1
             self.iteration += 1
-            print(self.iteration)
+            print('Current iteration: %d' % self.iteration)
             old_policy = self.policy.copy()
             self.evaluate_policy()
             if self.compare_policys(old_policy, self.policy):
@@ -53,8 +54,9 @@ dp
         self.remake_policy()
 
     def remake_policy(self):
-        ''' Take the policy that has key: tuple(obs, opponent_card) and for every obs compute average policy
-        for all possible opponent cards in key: obs
+        ''' Take the policy that has key: tuple(obs, opponent_card, public_cards) and for every obs compute
+        average policy for all possible opponent cards in key: obs
+        We take the first key then we find a match and store it to send to policy sum
         '''
         new_policy = collections.defaultdict(list)
         old_policy = self.policy
@@ -86,40 +88,37 @@ dp
 
     @staticmethod
     def _policy_sum(policy, same_obs_values, obs):
+        ''' Gets the average mean policy when given different policies
+        args:
+        policy: contains the local policy
+        same_obs_values: list of np arrays containing probs for every action
+        obs: key for policy
+        '''
         average_values = np.mean(same_obs_values, axis=0)
         policy[obs] = average_values
         return policy
 
     def compare_policys(self, p1, p2):
+        ''' Compare the policies given
+        If they have different number of keys they are different
+        Else check every policy's probs to be the same
+        Get the total different state policys and print it
+        '''
         if p1.keys() != p2.keys():
-            print('dif pol keys')
+            print('Dif number of policy keys')
             return False
         count = 0
         for key in p1:
-            pr1 = p1[key]
-            pr2 = p2[key]
             if not np.array_equal(p1[key], p2[key]):
                 count += 1
         if count > 0:
-            print('changes in policy: %d' % count)
-            return False
-        return True
-
-
-    def compare_values(self, v1, v2):
-        if v1.keys() != v2.keys():
-            print('dif value keys')
-            return False
-        count = 0
-        for key in v1:
-            if v1[key] != v2[key]:
-                count += 1
-        if count > 0:
-            print('changes in values: %d' % count)
+            print('Changes in policy: %d' % count)
             return False
         return True
 
     def find_agent(self):
+        ''' Check if our agent starts first or
+        '''
         agents = self.env.get_agents()
         for id, agent in enumerate(agents):
             if isinstance(agent, PIAgent):
@@ -127,6 +126,10 @@ dp
                 break
 
     def evaluate_policy(self):
+        '''We traverse the tree for every possible combination of cards(agent card, public cards and opponent card)
+        and also every starting possition so we can explore all the state space
+        We the total Value of our iteration with current policy so we can know if it is working
+        '''
         self.find_agent()
         suit = 'S'
         Vtotal = 0
@@ -149,7 +152,7 @@ dp
                         self.rank = rank4
                         self.public_ranks = (rank2, rank3)
                         Vtotal += self.traverse_tree()
-        print(Vtotal)
+        print('Total value: %d' % Vtotal)
         return Vtotal
 
 
@@ -163,29 +166,6 @@ dp
         current_player = self.env.get_player_id()
         # compute the q of previous state
         if not current_player == self.agent_id:
-            # vtotal = 0
-            # if self.env.op_has_card(current_player):
-            #     self.flag = 1
-            #     for rank in self.rank_list:
-            #         self.rank = rank
-            #         self.env.change_op_hand(Card('S', rank), current_player)
-            #         # other agent move
-            #         obs, legal_actions = self.get_state(current_player)
-            #         state = self.env.get_state(current_player)
-            #         action_probs = self.env.agents[current_player].get_action_probs(state, self.env.num_actions)
-            #         Vstate = 0
-            #         for action in legal_actions:
-            #             prob = action_probs[action]
-            #             # Keep traversing the child state
-            #             self.env.step(action)
-            #             v = self.traverse_tree()
-            #             Vstate += v * prob
-            #             self.env.step_back()
-            #         vtotal += Vstate*self.card_prob
-            #     self.flag = 0
-            #     return vtotal*self.gamma
-            # else:
-            # other agent move
             obs, legal_actions = self.get_state(current_player)
             state = self.env.get_state(current_player)
             action_probs = self.env.agents[current_player].get_action_probs(state, self.env.num_actions)
@@ -224,6 +204,8 @@ dp
         return Vstate * self.gamma
 
     def improve_policy(self, obs, quality, legal_actions):
+        '''Change the policy according to the new Q values
+        '''
         # best_action = max(quality, key=quality.get)
         #
         # new_policy = np.array([0 for _ in range(self.env.num_actions)])
@@ -234,7 +216,6 @@ dp
             q[i] = quality[i]
 
         new_policy = softmax(q)
-        #if self.flag == 1:
         if self.flag2 == 0:
             obs = (obs, self.rank)
         elif self.flag2 == 1:
@@ -243,10 +224,10 @@ dp
         if obs in self.policy.keys():
             self.policy[obs] = new_policy
         else:
-            print('eroor')
+            print('error') # just a check
 
     def action_probs(self, obs, legal_actions, policy):
-        ''' Obtain the action probabilities of the current state
+        ''' Obtain the action probabilities(policy) of the current state or initialize a random policy
 
         Args:
             obs (str): state_str
@@ -291,7 +272,7 @@ dp
         '''
 
         probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy)
-        # action = np.random.choice(len(probs), p=probs)
+        #action = np.random.choice(len(probs), p=probs)
         action = np.argmax(probs)
 
         # if np.random.rand() < self.epsilon:
@@ -328,6 +309,9 @@ dp
         return state['obs'].tostring(), list(state['legal_actions'].keys())
 
     def roundzero(self):
+        '''Check if the game is still in first round
+        if yes it raises the round flag
+        '''
         if self.env.first_round():
             self.flag2 = 1
         else:

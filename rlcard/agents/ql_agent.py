@@ -46,6 +46,8 @@ dp
         self.v = v
 
     def find_agent(self):
+        ''' Find if the agent starts first or second
+        '''
         agents = self.env.get_agents()
         for id, agent in enumerate(agents):
             if isinstance(agent, QLAgent):
@@ -53,16 +55,29 @@ dp
                 break
 
     def _decay_epsilon(self):
+        ''' Decay epsilon
+        '''
         if self.epsilon > self.epsilon_min:
             self.epsilon = max(self.epsilon_min, self.epsilon * self.decay_factor)
 
     def traverse_tree(self):
+        ''' Traverse the game tree:
+
+        Check if the game is over to return the chips earned(reward of the game)
+        If opponents plays make the other agent play
+        If our agent plays check every possible action and get the Q value of the action
+        Then return the Qvalue of the best or a random state according to the epsilon
+        Change the policy according to the new Q values
+        '''
+
+        # Check if the game is over to return the chips earned(reward of the game)
         if self.env.is_over():
             chips = self.env.get_payoffs()
             return chips[self.agent_id]
 
         current_player = self.env.get_player_id()
-        # compute the quality of previous state
+
+        # other agent move
         if not current_player == self.agent_id:
             state = self.env.get_state(current_player)
             # other agent move
@@ -77,7 +92,7 @@ dp
         if current_player == self.agent_id:
             quality = {}
             obs, legal_actions = self.get_state(current_player)
-            # if first time we encounter state initialize qualities
+            # if first time we encounter state initialize qualities or get the previous policy
             self.action_probs(obs, legal_actions, self.policy, self.qualities)
 
             for action in legal_actions:
@@ -102,7 +117,8 @@ dp
         return qstate * self.gamma
 
     def action_probs(self, obs, legal_actions, policy, action_values):
-        ''' Obtain the action probabilities of the current state
+        ''' Obtain the action probabilities(policy) of the current state
+        or create a new policy
 
         Args:
             obs (str): state_str
