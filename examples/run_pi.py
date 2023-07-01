@@ -1,4 +1,4 @@
-''' An example of solve New Hold'em with policy iteration
+''' An example of solving New Hold'em with policy iteration
 '''
 import os
 import argparse
@@ -44,12 +44,12 @@ def train(args):
     # Evaluate PI
     eval_env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        RandomAgent(num_actions=env.num_actions),
     ])
 
 

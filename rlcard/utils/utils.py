@@ -41,7 +41,7 @@ def init_standard_deck():
 
 
 def init_20_deck():
-    ''' Initialize a small deck of 20 cards
+    ''' Initialize a small deck of 20 cards for newlimit poker
 
         Returns:
             (list): Alist of Card object

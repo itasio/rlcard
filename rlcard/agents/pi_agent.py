@@ -21,21 +21,18 @@ dp
          converge se 4 iterations
         '''
 
-        self.public_card_prob = None
-        self.hand_card_prob = None
-        self.gamma = g
-        self.agent_id = 0
+        self.public_card_prob = None  # prob of having this set of public cards
+        self.hand_card_prob = None    # prob of having this set of hand cards
+        self.gamma = g                # gamma value
+        self.agent_id = 0             # starting possition of agent
         self.use_raw = False
         self.env = env
-        self.rank_list = ['A', 'T', 'J', 'Q', 'K']
-        self.card_prob = 0.2
+
 
         # A policy is a dict state_str -> action probabilities
         self.policy = collections.defaultdict(list)
-        self.state_values = collections.defaultdict(list)
         self.iteration = 0
-        self.flag = 0
-        self.flag2 = 0
+        self.flag2 = 0               # flag that indicates weather we are in round 0 or 1
         self.rank = None
         self.public_ranks = None
 
@@ -163,6 +160,14 @@ dp
 
 
     def traverse_tree(self):
+        ''' We traverse the game tree for a specific set of hand card, opponent card and public cards
+        If end game return the chips won or lost(reward)
+        If opponent turn get the probs for every move and play every action (except those with prob = 0):
+        Vstate = Sum (action_prob*Value of next state) for every action
+        If our agent plays get the the probs for every action(policy) play every possible action and update the policy
+        according to the new Qvalues
+        and return Vstate = Sum (action_prob*Value of next state) where action_probs based on previous policy.
+        '''
         if self.env.is_over():
             chips = self.env.get_payoffs()
             return chips[self.agent_id]
@@ -207,12 +212,18 @@ dp
             self.state_values[obs] = Vstate
             ''' alter policy by choosing the action with the max value'''
             self.round_zero()
-            self.improve_policy(obs, quality, legal_actions)
+            self.improve_policy(obs, quality)
 
         return Vstate * self.gamma
 
-    def improve_policy(self, obs, quality, legal_actions):
-        '''Change the policy according to the new Q values
+    def improve_policy(self, obs, quality):
+        ''' Change the policy according to the new Q values
+        Args:
+            obs: observable state
+            quality: new Qvalues, np array
+
+        flag2 = flag that indicates that we are behind the unveal of public cards
+
         '''
         # best_action = max(quality, key=quality.get)
         #
@@ -306,7 +317,7 @@ dp
         return action, info
 
     def step(self, state):
-        '''step = eval.step
+        ''' step = eval.step
         '''
         return self.eval_step(state)
 
@@ -326,7 +337,7 @@ dp
         return state['obs'].tostring(), list(state['legal_actions'].keys())
 
     def round_zero(self):
-        '''Check if the game is still in first round
+        ''' Check if the game is still in first round
         if yes it raises the round flag
         '''
         if self.env.first_round():
@@ -335,7 +346,10 @@ dp
             self.flag2 = 0
 
     def get_public_card_probs(self, handcard, pcard1, pcard2, opcard):
-        ''' Get the probability of getting those public cards
+        ''' Set the probability of getting those public cards/handcard-opponent card
+        Args: handcard: rank of ourcard
+              pcard1, pcard2: public cards
+              opcard: card of the opponent
         '''
         total_cards = 20
         prob1 = 4/total_cards
@@ -365,4 +379,6 @@ dp
             available_cards -= 1
         prob2 = available_cards/total_cards
         self.public_card_prob = self.hand_card_prob * prob1 * prob2
+
+
 
