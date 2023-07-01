@@ -43,6 +43,7 @@ dp
         while True:
             #k += 1
             self.iteration += 1
+            print('-----------------------------------------------------------------------')
             print('Current iteration: %d' % self.iteration)
             old_policy = self.policy.copy()
             self.evaluate_policy()
@@ -50,6 +51,7 @@ dp
                 break
             if self.iteration == 10:
                 break
+        print('=============================================================================')
         print('Optimal policy found: State space length: %d after %d iterations' % (len(self.policy), self.iteration))
         self.remake_policy()
 
@@ -172,6 +174,8 @@ dp
             Vstate = 0
             for action in legal_actions:
                 prob = action_probs[action]
+                if prob == 0:
+                    continue
                 # Keep traversing the child state
                 self.env.step(action)
                 v = self.traverse_tree()
@@ -222,11 +226,13 @@ dp
             obs = (obs, self.rank, self.public_ranks)
 
         if obs in self.policy.keys():
+            #print(self.policy[obs])
             self.policy[obs] = new_policy
+            #print(self.policy[obs])
         else:
-            print('error') # just a check
+            print('error')  # just a check
 
-    def action_probs(self, obs, legal_actions, policy):
+    def action_probs(self, obs, legal_actions, policy, eval=False):
         ''' Obtain the action probabilities(policy) of the current state or initialize a random policy
 
         Args:
@@ -241,6 +247,12 @@ dp
                 action_probs(numpy.array): The action probabilities
                 legal_actions (list): Indices of legal actions
         '''
+        if eval:
+            if obs in self.policy:
+                return self.policy[obs]
+            else:
+                print('sok')
+
         if self.flag2 == 0:
             obs1 = (obs, self.rank)
         elif self.flag2 == 1:
@@ -252,10 +264,11 @@ dp
             action_probs = np.array([0 for action in range(self.env.num_actions)])
             action_probs[best_action] = 1
             self.policy[obs1] = action_probs
-        elif obs1 not in policy.keys():
-            action_probs = policy[obs].copy()
-        else:
+        elif obs not in policy.keys():
             action_probs = policy[obs1].copy()
+        else:
+            print('1')
+            action_probs = policy[obs].copy()
         action_probs = remove_illegal(action_probs, legal_actions)
         return action_probs
 
@@ -271,7 +284,7 @@ dp
             info (dict): A dictionary containing information
         '''
 
-        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy)
+        probs = self.action_probs(state['obs'].tostring(), list(state['legal_actions'].keys()), self.policy, True)
         #action = np.random.choice(len(probs), p=probs)
         action = np.argmax(probs)
 
