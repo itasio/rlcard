@@ -122,7 +122,7 @@ dp
 
         Args:
             obs (str): state_str
-            legal_actions (list): List of leagel actions
+            legal_actions (list): List of legal actions
             player_id (int): The current player
             policy (dict): The used policy
             action_values (dict): The action_values of policy
@@ -132,6 +132,7 @@ dp
                 action_probs(numpy.array): The action probabilities
                 legal_actions (list): Indices of legal actions
         '''
+
         # if new state initialize qualities and policy
         if obs not in policy.keys() and obs not in self.qualities.keys():
             tactions = np.array([-np.inf for action in range(self.env.num_actions)])
@@ -145,7 +146,6 @@ dp
             action_probs = policy[obs].copy()
         action_probs = remove_illegal(action_probs, legal_actions)
         return action_probs
-
 
     def update_policy(self, obs, next_state_values, legal_actions):
         ''' Update the policy according to the new state/action quality
@@ -196,7 +196,6 @@ dp
         '''
         return self.eval_step(state)
 
-
     def get_state(self, player_id):
         ''' Get state_str of the player
 
@@ -212,7 +211,7 @@ dp
         return state['obs'].tostring(), list(state['legal_actions'].keys())
 
     def save(self):
-        '''  Save model
+        ''' Save model
         '''
 
         if not os.path.exists(self.model_path):

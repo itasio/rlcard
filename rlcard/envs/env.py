@@ -188,6 +188,7 @@ class Env(object):
     def get_card(self, player_id):
         card = self.game.op_hand(player_id)
         return card.rank
+
     def get_state(self, player_id):
         ''' Get the state given player id
 

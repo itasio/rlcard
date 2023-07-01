@@ -183,6 +183,7 @@ class NewLimitHoldemGame:
             return None
         else:
             return self.players[player].hand[0]
+
     def step_back(self):
         """
         Return to the previous state of the game

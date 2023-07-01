@@ -21,6 +21,8 @@ dp
          converge se 4 iterations
         '''
 
+        self.public_card_prob = None
+        self.hand_card_prob = None
         self.gamma = g
         self.agent_id = 0
         self.use_raw = False
@@ -66,38 +68,38 @@ dp
         for key1 in old_policy:
             if isinstance(key1, tuple):
                 obs1 = key1[0]
-            else:
-                obs1 = key1
-
-            if obs1 in new_policy:
-                continue
-
-            same_obs_values = []
-            for key2 in old_policy:
-                if isinstance(key2, tuple):
-                    obs2 = key2[0]
+                if obs1 in new_policy:
+                    continue
+                same_obs_values = []
+                probs = np.array([])
+                for key2 in old_policy:
+                    if isinstance(key2, tuple):
+                        obs2 = key2[0]
+                        if obs1 == obs2:
+                            same_obs_values.append(old_policy[key2])
+                            probs = np.append(probs, key2[1])
+                if same_obs_values:
+                    new_policy = self._policy_sum(new_policy, same_obs_values, obs1, probs)
                 else:
-                    obs2 = key2
-                if obs1 == obs2:
-                    same_obs_values.append(old_policy[key2])
+                    print('10')
 
-            if same_obs_values:
-                new_policy = self._policy_sum(new_policy, same_obs_values, obs1)
-            else:
-                print('10')
         self.policy = new_policy
 
 
     @staticmethod
-    def _policy_sum(policy, same_obs_values, obs):
+    def _policy_sum(policy, same_obs_values, obs, probs=None):
         ''' Gets the average mean policy when given different policies
         args:
         policy: contains the local policy
         same_obs_values: list of np arrays containing probs for every action
         obs: key for policy
         '''
-        average_values = np.mean(same_obs_values, axis=0)
-        policy[obs] = average_values
+        if probs is None:
+            average_values = np.mean(same_obs_values, axis=0)
+            policy[obs] = average_values
+        else:
+            average_values = np.average(same_obs_values, axis=0, weights=probs)
+            policy[obs] = average_values
         return policy
 
     def compare_policys(self, p1, p2):
@@ -143,6 +145,7 @@ dp
                                        Card(suit, rank3), Card(suit, rank4))
                         self.rank = rank4
                         self.public_ranks = (rank2, rank3)
+                        self.get_public_card_probs(rank1, rank2, rank3, rank4)
                         Vtotal += self.traverse_tree()
         player = (self.agent_id + 1) % self.env.num_players
         for rank1 in self.rank_list:
@@ -153,6 +156,7 @@ dp
                                        Card(suit, rank3), Card(suit, rank4))
                         self.rank = rank4
                         self.public_ranks = (rank2, rank3)
+                        self.get_public_card_probs(rank1, rank2, rank3, rank4)
                         Vtotal += self.traverse_tree()
         print('Total value: %d' % Vtotal)
         return Vtotal
@@ -163,7 +167,7 @@ dp
             chips = self.env.get_payoffs()
             return chips[self.agent_id]
 
-        self.roundzero()
+        self.round_zero()
 
         current_player = self.env.get_player_id()
         # compute the q of previous state
@@ -202,7 +206,7 @@ dp
 
             self.state_values[obs] = Vstate
             ''' alter policy by choosing the action with the max value'''
-            self.roundzero()
+            self.round_zero()
             self.improve_policy(obs, quality, legal_actions)
 
         return Vstate * self.gamma
@@ -221,9 +225,9 @@ dp
 
         new_policy = softmax(q)
         if self.flag2 == 0:
-            obs = (obs, self.rank)
+            obs = (obs, self.hand_card_prob, self.rank)
         elif self.flag2 == 1:
-            obs = (obs, self.rank, self.public_ranks)
+            obs = (obs, self.public_card_prob, self.rank, self.public_ranks)
 
         if obs in self.policy.keys():
             #print(self.policy[obs])
@@ -254,9 +258,9 @@ dp
                 print('sok')
 
         if self.flag2 == 0:
-            obs1 = (obs, self.rank)
+            obs1 = (obs, self.hand_card_prob, self.rank)
         elif self.flag2 == 1:
-            obs1 = (obs,  self.rank, self.public_ranks)
+            obs1 = (obs, self.public_card_prob, self.rank, self.public_ranks)
         # if new state initialize policy
         if obs not in policy.keys() and obs1 not in policy.keys():
             best_action = random.choice(legal_actions)
@@ -321,7 +325,7 @@ dp
         state = self.env.get_state(player_id)
         return state['obs'].tostring(), list(state['legal_actions'].keys())
 
-    def roundzero(self):
+    def round_zero(self):
         '''Check if the game is still in first round
         if yes it raises the round flag
         '''
@@ -329,3 +333,36 @@ dp
             self.flag2 = 1
         else:
             self.flag2 = 0
+
+    def get_public_card_probs(self, handcard, pcard1, pcard2, opcard):
+        ''' Get the probability of getting those public cards
+        '''
+        total_cards = 20
+        prob1 = 4/total_cards
+        total_cards = 19
+        if opcard == handcard:
+            prob2 = 3/total_cards
+        else:
+            prob2 = 4/total_cards
+        self.hand_card_prob = prob1 * prob2
+
+        total_cards = 18  # 20 - 2 already handed at first round
+        available_cards = 4  # 4 for each rank
+        # probability of first public card
+        if pcard1 == handcard:
+            available_cards -= 1
+        if pcard1 == opcard:
+            available_cards -= 1
+        prob1 = available_cards/total_cards
+        # probability of second public card
+        total_cards = 17
+        available_cards = 4  # 4 for each rank
+        if pcard2 == handcard:
+            available_cards -= 1
+        if pcard2 == opcard:
+            available_cards -= 1
+        if pcard2 == pcard1:
+            available_cards -= 1
+        prob2 = available_cards/total_cards
+        self.public_card_prob = self.hand_card_prob * prob1 * prob2
+
