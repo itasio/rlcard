@@ -66,7 +66,7 @@ dp
         Check if the game is over to return the chips earned(reward of the game)
         If opponents plays make the other agent play
         If our agent plays check every possible action and get the Q value of the action
-        Then return the Qvalue of the best or a random state according to the epsilon
+        Then return the Qvalue of the best or a random state according to the epsilon (off policy)
         Change the policy according to the new Q values
         '''
 

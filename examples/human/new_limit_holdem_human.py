@@ -6,7 +6,7 @@ import args as args
 
 import rlcard
 from rlcard.agents import LimitholdemHumanAgent as HumanAgent, SARSAAgent
-from rlcard.agents import RandomAgent, ThresholdAgent, ThresholdAgent2, QLAgent
+from rlcard.agents import RandomAgent, ThresholdAgent, ThresholdAgent2, QLAgent, PIAgent
 from rlcard.utils.utils import print_card
 
 # Make environment
@@ -14,7 +14,9 @@ env = rlcard.make('new-limit-holdem')
 human_agent = HumanAgent(env.num_actions)
 # Init agent:
 agent_0 = RandomAgent(num_actions=env.num_actions)
+agent_0 = ThresholdAgent(num_actions=env.num_actions)
 agent_0 = ThresholdAgent2(num_actions=env.num_actions)
+
 sarsa_agent = SARSAAgent(
         env,
         os.path.join(
@@ -22,6 +24,7 @@ sarsa_agent = SARSAAgent(
         ),
     )
 sarsa_agent.load()
+
 ql_agent = QLAgent(
         env,
         os.path.join(
@@ -30,9 +33,18 @@ ql_agent = QLAgent(
     )
 ql_agent.load()
 
+pi_agent = PIAgent(
+        env,
+        os.path.join(
+            'experiments/new_limit_holdem_pi_result/pi_model',
+        ),
+)
+pi_agent.load()
+
+# hard code the agen you want to play against (pi_agent, ql_agent, sarsa_agent)
 env.set_agents([
     human_agent,
-    ql_agent,
+    pi_agent,
 ])
 
 print(">>New Limit Hold'em random agent")

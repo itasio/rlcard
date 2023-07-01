@@ -13,7 +13,7 @@ class PIAgent:
     ''' Implement policy - iteration algorithm
     '''
 
-    def __init__(self, env, g=1):
+    def __init__(self, env, model_path='./pi_model', g=1):
         ''' Initialize Agent
 dp
          Args:
@@ -25,8 +25,10 @@ dp
         self.hand_card_prob = None    # prob of having this set of hand cards
         self.gamma = g                # gamma value
         self.agent_id = 0             # starting possition of agent
+        self.rank_list = ['A', 'T', 'J', 'Q', 'K']
         self.use_raw = False
         self.env = env
+        self.model_path = model_path
 
 
         # A policy is a dict state_str -> action probabilities
@@ -209,7 +211,6 @@ dp
                 quality[action] = v  # Qvalue
                 Vstate += v*prob
 
-            self.state_values[obs] = Vstate
             ''' alter policy by choosing the action with the max value'''
             self.round_zero()
             self.improve_policy(obs, quality)
@@ -321,7 +322,6 @@ dp
         '''
         return self.eval_step(state)
 
-
     def get_state(self, player_id):
         ''' Get state_str of the player
 
@@ -380,5 +380,25 @@ dp
         prob2 = available_cards/total_cards
         self.public_card_prob = self.hand_card_prob * prob1 * prob2
 
+    def save(self):
+        '''  Save model
+        '''
 
+        if not os.path.exists(self.model_path):
+            os.makedirs(self.model_path)
+
+        policy_file = open(os.path.join(self.model_path, 'policy.pkl'), 'wb')
+        pickle.dump(self.policy, policy_file)
+        policy_file.close()
+
+    def load(self):
+        ''' Load model
+        '''
+
+        if not os.path.exists(self.model_path):
+            return
+
+        policy_file = open(os.path.join(self.model_path, 'policy.pkl'), 'rb')
+        self.policy = pickle.load(policy_file)
+        policy_file.close()
 

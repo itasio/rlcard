@@ -38,6 +38,10 @@ def train(args):
     # Initilize training Agent
     agent = PIAgent(
         env,
+        os.path.join(
+            args.log_dir,
+            'ql_model',
+        ),
     )
 
 
@@ -57,6 +61,7 @@ def train(args):
     with Logger(args.log_dir) as logger:
         # Evaluate the performance.
         agent.train()
+        agent.save()
         for episode in range(args.num_episodes):
             logger.log_performance(
                 episode,
@@ -93,7 +98,5 @@ if __name__ == '__main__':
         default=20,
     )
 
-
     args = parser.parse_args()
-
     train(args)
