@@ -15,12 +15,12 @@ next state is about the next state the agent will be. It's not about the other p
 P = {
 
 "state1": {
-    "raise": [ { "state2": [0.9, 0.0, 9],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
+    "raise": [ { "state2": [0.9, 1.0, 9],           # next state: [prob of next state, reward of next state, num of times visited next state right after state1] 
                  "state3": [0.1, 0.5, 1]
                }, ctr                           ctr: (num of times action raise was taken when in state1)
     ],
     "check": [ { "state2": [0.1, 1.0, 1],
-                 "state3": [0.8, -1.0, 8],
+                 "state3": [0.8, 0.5, 8],
                  "state4": [0.1, 0.0, 1]
                }, ctr
     ]
@@ -32,7 +32,7 @@ P = {
                }, ctr                           ctr: (num of times action call was taken when in state2)
     ],
     "fold": [ { "state5": [0.1, 1.0, 1],
-                 "state3": [0.8, -1.0, 8],
+                 "state3": [0.8, 0.5, 8],
                  "state4": [0.1, 0.0, 1]
                }, ctr
     ]
@@ -70,21 +70,21 @@ class ValueIterAgent:
         Args:
             env (Env): Env class
         '''
+        self.random_choices = 0
+        self.value_choices = 0
         self.use_raw = 2
         self.env = env
         self.conv_limit = conv_limit
-        self. conv = False
         self.gamma = gamma
         self.agent_id = 0
         self.model_path = model_path
-        self.iteration = 0
-        self.states_discovered = 0
         self.P = collections.defaultdict(dict)              # state space
         self.V = collections.defaultdict(float)    # value function for each state (expected return of the best action for each state)
         self.Q = collections.defaultdict(list)     # Q table
     
 
     def value_iteration_algo(self):
+        iteration = 0
         for state in self.P:
                 self.V[state] = [0,0]
         while True:
@@ -98,25 +98,23 @@ class ValueIterAgent:
                         self.Q[state][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st][0])
             ll = list(self.Q.values())  # list of lists with Q values of each action per state
             q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
-            # v_vals = list(self.V.values())
             v_vals = [item[0] for item in list(self.V.values())]    # list of rewards in V 
             if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit:
                 # converged
-                self. conv = True
-                print('\nValue iteration converged after {} iterations'.format(self.iteration))
+                print('\nState space has {} different states'.format(len(self.V)))
+                print('Value iteration converged after {} iterations'.format(iteration))
                 break   # found convergence must stop
             # Since i have not converged, i set new V(s)
             q_vals_ind = np.argmax(ll, axis = 1)    # index of action which provides the maximum expected reward for each state as calculated in Q table
             for i, st in enumerate(self.Q):         # Setting V value for each state
                 self.V[st][1] = q_vals_ind[i]       # action that provides maximum expected reward when at state st
                 self.V[st][0] = q_vals[i]           # maximum expected reward when at state st
-            self.iteration += 1
+            iteration += 1
+
 
     def learn_env(self):
-        ''' Do one iteration of value iteration
+        ''' Play games to learn the enviroment
         '''
-        self.iteration += 1
-        self.states_discovered = len(self.P)
         self.env.reset()
         self.find_agent()
         self.traverse_tree()
@@ -148,31 +146,26 @@ class ValueIterAgent:
             # Keep traversing the child state
             self.env.step(action)
             Vstate, next_state, terminal = self.traverse_tree()
-            if self.conv:
-                return Vstate, next_state, terminal
             self.env.step_back()
             return Vstate, next_state, terminal
         
         if current_player == self.agent_id:
             obs, legal_actions = self.get_state(current_player)
             # update state space, V and Q table (initializing only)
-            self.update_P_and_Q_and_V(obs, legal_actions)
+            self.update_P(obs, legal_actions)
             # q_mean = 0  # For holding mean q between legal actions in a state, that will be transferred to parent state of tree
-            q_median = []
             for action in legal_actions:
                 # Keep traversing the child state
                 self.env.step(action)
                 q, next_state, terminal = self.traverse_tree()    # I want my next state, not opponent's state
-                # q_mean += q
-                q_median.append(q)
                 if terminal:                    # If next state is terminal we should update P, Q, V 
                     if next_state == "other player":
                         # this is my last state, game is finished and i took last action e.g. fold
                         #next_state = obs    # Next state is my current state TODO here the action taken in this state is not recorded!
                         next_state, next_st_legal_actions = self.get_state(current_player)  # this way we pass in next state the info about action taken
-                        self.update_P_and_Q_and_V(next_state, next_st_legal_actions, terminal, q)    # to record the last state into dicts
+                        self.update_P(next_state, next_st_legal_actions)    # to record the last state into dicts
                     else:
-                        self.update_P_and_Q_and_V(next_state, legal_actions, terminal, q)    # to record the last state into dicts
+                        self.update_P(next_state, legal_actions)    # to record the last state into dicts
                     
                     # iterate in P to set reward of next state
                     # a state must give same reward in value iteration whenever it shows up
@@ -196,11 +189,11 @@ class ValueIterAgent:
                 for i in self.P[obs][action][0]:    #calculate again probabilities of each recorded next state when in current state obs and taken certain action
                     self.P[obs][action][0][i][0] = self.P[obs][action][0][i][2] / self.P[obs][action][1]    #times visited next state/sum of all visits
 
-            return np.median(q_median), obs, False
+            return q, obs, False
 
     @staticmethod
     def step(state):
-        ''' Predict the action given the curent state in gerenerating training data.
+        ''' Predict the action given the current state in gerenerating training data.
 
         Args:
             state (dict): An dictionary that represents the current state
@@ -213,33 +206,26 @@ class ValueIterAgent:
 
 
     def eval_step(self, state):
-        ''' Predict the action given the current state for evaluation.
-            Since the random agents are not trained. This function is equivalent to step function
+        ''' Predict the action given the current state for evaluation. 
+            Used if the state is known, otherwise step() is used
+            
 
         Args:
             state (dict): An dictionary that represents the current state
 
         Returns:
-            action (int): The action predicted (randomly chosen) by the random agent
+            action (int): The action predicted by the agent
             probs (list): The list of action probabilities
         '''
-        # if not self.conv:   # if value iteration has not converged
-        #     probs = [0 for _ in range(self.env.num_actions)]
-        #     for i in state['legal_actions']:
-        #         probs[i] = 1/len(state['legal_actions'])
 
-        #     info = {}
-        #     info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
-
-        #     return self.step(state), info
-        # else:
-        # obs, legal_actions = self.get_state(self.agent_id)
         obs, legal_actions = str(state['raw_obs']), list(state['legal_actions'].keys())
         if obs not in self.V:
+            self.random_choices += 1
             return self.step(state), {}
         best_action_num = self.V[obs][1]
         best_action = self.get_action(best_action_num)
         if best_action in state['raw_legal_actions']:   # if our best action for this state is available take it
+            self.value_choices += 1
             return best_action, {}
         else:                                           # play randomly
             return self.step(state),{}
@@ -247,6 +233,8 @@ class ValueIterAgent:
 
 
     def get_action(self, num):
+        '''Given the action num return the action that is decoded e.g. "fold", "check"
+        '''
         if num == 0:
             return 'call'
         elif num == 1:
@@ -261,20 +249,12 @@ class ValueIterAgent:
 
 
     
-    def update_P_and_Q_and_V(self, obs, legal_actions, terminal = False, q = 0):
+    def update_P(self, obs, legal_actions):
         '''
         For State Space P:
             1) add new state and actions for it, or
             2) update list of legal actions for existing state (add actions that are not already in the list)
                     
-        For Q table:
-            1) Add new state and rewards for its legal actions(set to zero) or
-            2) Update rewards (set to zero) of legal actions for existing state 
-
-        For V: If new state found add it to V with expected return 0 for arbitrary action in {0,1,2,3}. Here I suppose 0
-        Args:
-            obs (str): state_str
-            legal_actions (list): List of legel actions
         '''
         # if existing state
         if obs in self.P.keys():
@@ -302,6 +282,11 @@ class ValueIterAgent:
         state = self.env.get_state(player_id)
         # return state['obs'].tostring(), list(state['legal_actions'].keys())
         return str(state['raw_obs']), list(state['legal_actions'].keys())
+
+
+'''
+
+The following is for practicing with the P, Q, V table operations
 
 if __name__ == '__main__':
     v = collections.defaultdict(dict)           # P table
@@ -354,3 +339,4 @@ if __name__ == '__main__':
         fl[st][0] = q_vals[i]
         fl[st][1] = q_vals_ind[i]
     print(fl)
+'''

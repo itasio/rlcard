@@ -56,36 +56,36 @@ def train(args):
     eval_env.set_agents([
         agent,
         # ThresholdAgent(num_actions=env.num_actions),
-        # RandomAgent(num_actions=env.num_actions)
-        ThresholdAgent2(num_actions=env.num_actions)
+        RandomAgent(num_actions=env.num_actions)
+        # ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     env.set_agents([
         agent,
         # ThresholdAgent(num_actions=env.num_actions),
-        # RandomAgent(num_actions=env.num_actions)
-        ThresholdAgent2(num_actions=env.num_actions)
+        RandomAgent(num_actions=env.num_actions)
+        # ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     # Start training
     with Logger(args.log_dir) as logger:
         for episode in range(args.num_episodes):
-            print('\rIteration {}'.format(episode), end='')
+            print('\rLearning the enviroment {}'.format(episode), end='')
             agent.learn_env()
             
-        while not agent.conv:          # while algorithm has not converged
-            agent.value_iteration_algo()
-        for episode in range(50):
-            logger.log_performance(
-                episode,
-                tournament(
-                    eval_env,
-                    args.num_eval_games
-                )[0]
-            )
-
-                
-
+            # now begin training
+        agent.value_iteration_algo()
+        for episode in range(args.num_eval_games):
+            if episode % args.evaluate_every == 0:
+                logger.log_performance(
+                    episode,
+                    tournament(
+                        eval_env,
+                        args.num_eval_games
+                    )[0]
+                )
+        print('Random choices {}'.format(agent.random_choices))
+        print('Value choices {}'.format(agent.value_choices))
         # Get the paths
         csv_path, fig_path = logger.csv_path, logger.fig_path
     # Plot the learning curve
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--evaluate_every',
         type=int,
-        default=200,
+        default=50,
     )
     parser.add_argument(
         '--log_dir',
