@@ -185,9 +185,6 @@ class Env(object):
         '''
         return self.game.get_player_id()
 
-    def get_card(self, player_id):
-        card = self.game.op_hand(player_id)
-        return card.rank
 
     def get_state(self, player_id):
         ''' Get the state given player id
@@ -268,23 +265,3 @@ class Env(object):
         '''
         raise NotImplementedError
 
-    def change_op_hand(self, card, player_id):
-        '''Change the card of the opponent
-        '''
-        self.game.change_hand(card, player_id)
-
-    def op_has_card(self, player):
-        '''Check if the opponent has a card
-        '''
-        if self.game.op_hand(player) is None:
-            return True
-        else:
-            return False
-
-    def first_round(self):
-        '''Check if the game is still in first round
-        '''
-        if self.game.round_counter == 0:
-            return True
-        else:
-            return False
