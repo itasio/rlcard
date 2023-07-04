@@ -56,15 +56,15 @@ def train(args):
     eval_env.set_agents([
         agent,
         # ThresholdAgent(num_actions=env.num_actions),
-        RandomAgent(num_actions=env.num_actions)
-        # ThresholdAgent2(num_actions=env.num_actions)
+        # RandomAgent(num_actions=env.num_actions)
+        ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     env.set_agents([
         agent,
         # ThresholdAgent(num_actions=env.num_actions),
-        RandomAgent(num_actions=env.num_actions)
-        # ThresholdAgent2(num_actions=env.num_actions)
+        # RandomAgent(num_actions=env.num_actions)
+        ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     # Start training
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=1000,
+        default=2000,
     )
     parser.add_argument(
         '--num_eval_games',

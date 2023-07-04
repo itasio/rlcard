@@ -151,17 +151,15 @@ class ValueIterAgent:
         
         if current_player == self.agent_id:
             obs, legal_actions = self.get_state(current_player)
-            # update state space, V and Q table (initializing only)
+            # update state space
             self.update_P(obs, legal_actions)
-            # q_mean = 0  # For holding mean q between legal actions in a state, that will be transferred to parent state of tree
             for action in legal_actions:
                 # Keep traversing the child state
                 self.env.step(action)
                 q, next_state, terminal = self.traverse_tree()    # I want my next state, not opponent's state
-                if terminal:                    # If next state is terminal we should update P, Q, V 
+                if terminal:                    # If next state is terminal we should update P 
                     if next_state == "other player":
                         # this is my last state, game is finished and i took last action e.g. fold
-                        #next_state = obs    # Next state is my current state TODO here the action taken in this state is not recorded!
                         next_state, next_st_legal_actions = self.get_state(current_player)  # this way we pass in next state the info about action taken
                         self.update_P(next_state, next_st_legal_actions)    # to record the last state into dicts
                     else:
@@ -193,7 +191,7 @@ class ValueIterAgent:
 
     @staticmethod
     def step(state):
-        ''' Predict the action given the current state in gerenerating training data.
+        ''' Predict the action given the current state.
 
         Args:
             state (dict): An dictionary that represents the current state
@@ -284,59 +282,3 @@ class ValueIterAgent:
         return str(state['raw_obs']), list(state['legal_actions'].keys())
 
 
-'''
-
-The following is for practicing with the P, Q, V table operations
-
-if __name__ == '__main__':
-    v = collections.defaultdict(dict)           # P table
-    v["st1"]["raise"] = [{},0]
-    v["st1"]["call"] = [{},0]
-    print(v)
-    v["st1"]["raise"][1] +=1
-    v["st1"]["raise"][0]["st2"] =[0,2,3,4]
-    v["st1"]["raise"][0]["st3"] =[10,50,60,70]
-    print(v)
-    v["st1"]["raise"][0]["st2"][0] =1
-    pp.pprint(v)
-    v["st2"]["raise"] = [{},0]
-    pp.pprint(v)
-    print(v["st1"].keys())
-    for nxt_st in v["st1"]["raise"][0]:
-        prob, rew, ctr,cc = v["st1"]["raise"][0][nxt_st]
-        print(nxt_st, prob, rew, ctr,cc)
-    for i in v["st1"]["raise"][0].items():
-        prob, rew, ctr,cc = i[1]
-        print(i[0])
-        print(i[1])
-
-
-    qq = collections.defaultdict(list)      # Q table
-    qq["st1"] = [1,2,3,4]
-    qq["st2"] = [5,6,2,3]
-    ll = list(qq.values())
-    print(ll)
-    k = np.max(ll, axis = 1)    #to be assigned to V
-    print(k)
-
-    fl = collections.defaultdict(int)     # V table
-    fl["st1"] = [2,4]
-    fl["st2"] = [3,5]
-    # fl["st1"] = 0
-    # fl["st2"] = 0
-    # for st in qq:
-    #     fl[st]  =np.max(qq[st])
-    print(fl)
-    ll = list(qq.values())  # list of lists with Q values of each action per state
-    q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
-    q_vals_ind = np.argmax(ll, axis = 1)
-    v_vals = list(fl.values())
-    v_vals = [item[0] for item in list(fl.values())]
-    v_vals = q_vals
-    print(fl)
-    for i, st in enumerate(qq):       # Setting V value for each state
-        # self.V[st] = np.max(self.Q[st])
-        fl[st][0] = q_vals[i]
-        fl[st][1] = q_vals_ind[i]
-    print(fl)
-'''
