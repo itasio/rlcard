@@ -55,35 +55,36 @@ def train(args):
     # Evaluate Value Iteration
     eval_env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        # ThresholdAgent(num_actions=env.num_actions),
         # RandomAgent(num_actions=env.num_actions)
-        # ThresholdAgent2(num_actions=env.num_actions)
+        ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     env.set_agents([
         agent,
-        ThresholdAgent(num_actions=env.num_actions),
+        # ThresholdAgent(num_actions=env.num_actions),
         # RandomAgent(num_actions=env.num_actions)
-        # ThresholdAgent2(num_actions=env.num_actions)
+        ThresholdAgent2(num_actions=env.num_actions)
     ])
 
     # Start training
     with Logger(args.log_dir) as logger:
         for episode in range(args.num_episodes):
             print('\rIteration {}'.format(episode), end='')
-            # Evaluate the performance. Play with Random agents.
-            if episode % args.evaluate_every == 0:
-    #            agent.save()  # Save model
-                logger.log_performance(
-                    episode,
-                    tournament(
-                        eval_env,
-                        args.num_eval_games
-                    )[0]
-                )
-                # print(agent.epsilon)
-            agent.train()
+            agent.learn_env()
+            
+        while not agent.conv:          # while algorithm has not converged
+            agent.value_iteration_algo()
+        for episode in range(50):
+            logger.log_performance(
+                episode,
+                tournament(
+                    eval_env,
+                    args.num_eval_games
+                )[0]
+            )
 
+                
 
         # Get the paths
         csv_path, fig_path = logger.csv_path, logger.fig_path
@@ -100,12 +101,12 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_episodes',
         type=int,
-        default=6000,
+        default=1000,
     )
     parser.add_argument(
         '--num_eval_games',
         type=int,
-        default=1000,
+        default=2000,
     )
     parser.add_argument(
         '--evaluate_every',

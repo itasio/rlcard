@@ -84,19 +84,42 @@ class ValueIterAgent:
         self.Q = collections.defaultdict(list)     # Q table
     
 
-    def train(self):
+    def value_iteration_algo(self):
+        for state in self.P:
+                self.V[state] = [0,0]
+        while True:
+            for state in self.P:
+                self.Q[state] = [0,0,0,0]
+            for state in self.P:
+                for action in self.P[state]:
+                    for item in self.P[state][action][0].items(): # for every next state after current state obs taking certain action 
+                        prob_next_st, rew_next_st, ctr = item[1]    
+                        nxt_st = item[0]
+                        self.Q[state][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st][0])
+            ll = list(self.Q.values())  # list of lists with Q values of each action per state
+            q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
+            # v_vals = list(self.V.values())
+            v_vals = [item[0] for item in list(self.V.values())]    # list of rewards in V 
+            if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit:
+                # converged
+                self. conv = True
+                print('\nValue iteration converged after {} iterations'.format(self.iteration))
+                break   # found convergence must stop
+            # Since i have not converged, i set new V(s)
+            q_vals_ind = np.argmax(ll, axis = 1)    # index of action which provides the maximum expected reward for each state as calculated in Q table
+            for i, st in enumerate(self.Q):         # Setting V value for each state
+                self.V[st][1] = q_vals_ind[i]       # action that provides maximum expected reward when at state st
+                self.V[st][0] = q_vals[i]           # maximum expected reward when at state st
+            self.iteration += 1
+
+    def learn_env(self):
         ''' Do one iteration of value iteration
         '''
         self.iteration += 1
         self.states_discovered = len(self.P)
         self.env.reset()
         self.find_agent()
-        if self.conv:
-            # print('Value iteration converged after {} iterations'.format(self.iteration))
-            return
         self.traverse_tree()
-        if self.conv:
-            print('Value iteration converged after {} iterations'.format(self.iteration))
 
     def find_agent(self):
         agents = self.env.get_agents()
@@ -150,45 +173,29 @@ class ValueIterAgent:
                         self.update_P_and_Q_and_V(next_state, next_st_legal_actions, terminal, q)    # to record the last state into dicts
                     else:
                         self.update_P_and_Q_and_V(next_state, legal_actions, terminal, q)    # to record the last state into dicts
-                if self.conv:
-                    return q, next_state, False
+                    
+                    # iterate in P to set reward of next state
+                    # a state must give same reward in value iteration whenever it shows up
+                    # for state in self.P:
+                    #     for act in state:
+                    for state in self.P:
+                        for act in self.P[state]:
+                            if next_state in self.P[state][act][0].keys():
+                                self.P[state][act][0][next_state][1] = (self.P[state][act][0][next_state][1] + q) / 2     # q_new = (q_old + q) / 2
+
                 self.env.step_back()
                 
                 self.P[obs][action][1] +=1  #took action when in state obs one more time
-                if next_state not in self.P[obs][action][0].keys():   #next state first time recorded for current state
+                if next_state not in self.P[obs][action][0].keys() and terminal:   #next state first time recorded for current state and it is terminal
                     self.P[obs][action][0][next_state] = [0, q, 1] #prob of next state, reward for this state, times visited this state 
+                elif next_state not in self.P[obs][action][0].keys() and not terminal:
+                    self.P[obs][action][0][next_state] = [0, 0, 1]
                 else:   # I have visited again next state, after current state obs
                     self.P[obs][action][0][next_state][2] += 1 
-                    self.P[obs][action][0][next_state][1] = (self.P[obs][action][0][next_state][1] + q) / 2     # q_new = (q_old + q) / 2
                 
                 for i in self.P[obs][action][0]:    #calculate again probabilities of each recorded next state when in current state obs and taken certain action
                     self.P[obs][action][0][i][0] = self.P[obs][action][0][i][2] / self.P[obs][action][1]    #times visited next state/sum of all visits
 
-                for item in self.P[obs][action][0].items(): # for every next state after current state obs taking certain action 
-                    prob_next_st, rew_next_st, ctr = item[1]    
-                    nxt_st = item[0]
-                    self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st][0])
-                
-                #equivalent with the above
-                # for nxt_st in self.P[obs][action][0]:   # for every next state after current state obs taking certain action 
-                #     prob_next_st, rew_next_st, ctr = self.P[obs][action][0][nxt_st]
-                #     self.Q[obs][action] += prob_next_st * (rew_next_st + self.gamma * self.V[nxt_st])
-
-                ll = list(self.Q.values())  # list of lists with Q values of each action per state
-                q_vals = np.max(ll, axis = 1)    #maximum expected reward for each state as calculated in Q table
-                # v_vals = list(self.V.values())
-                v_vals = [item[0] for item in list(self.V.values())]    # list of rewards in V 
-                if np.max(np.abs(np.subtract(q_vals,v_vals))) < self.conv_limit and self.states_discovered == len(self.P):
-                    # converged and also no new states discovered in last training round
-                    self. conv = True
-                    break   # found convergence must stop
-                # Since i have not converged, i set new V(s)
-                q_vals_ind = np.argmax(ll, axis = 1)    # index of action which provides the maximum expected reward for each state as calculated in Q table
-                for i, st in enumerate(self.Q):         # Setting V value for each state
-                    self.V[st][1] = q_vals_ind[i]       # action that provides maximum expected reward when at state st
-                    self.V[st][0] = q_vals[i]           # maximum expected reward when at state st
-                    # self.V[st] = np.max(self.Q[st])
-            # return q_mean/len(legal_actions), obs
             return np.median(q_median), obs, False
 
     @staticmethod
@@ -270,27 +277,16 @@ class ValueIterAgent:
             legal_actions (list): List of legel actions
         '''
         # if existing state
-        if obs in self.P.keys() and obs in self.Q.keys():
+        if obs in self.P.keys():
             for action in legal_actions:            # check all listed actions that can be done in this state
                 if action not in self.P[obs].keys():    # if any not listed in P so far add it
                     # initialize now will change later
                     #self.P[obs][action] = [[0,0,0,0]]   # {next_st: [prob_next_st, rew_next_st, num_visited_next_st]}
                     self.P[obs][action] =[{},0] # so far zero times 
-                # now reset rewards of Q table for legal actions, will be recalculated 
-                self.Q[obs][action] = 0
         else:
-            # new state found, add it to dicts and set appropriate values
-            self.Q[obs] = [-np.inf, -np.inf, -np.inf, -np.inf]
-
             for action in legal_actions:
-                #self.P[obs][action] = [[0,0,0,0]]
                 self.P[obs][action] =[{},0] # so far zero times 
-                self.Q[obs][action] = 0
-            if terminal:        # a new terminal state is found, set it's value equals to q for an arbitraty action_num suppose 0->call
-                self.V[obs] = [q,0]
-                self.Q[obs] = [q, q, q, q]  # setting q of new terminal state
-            else:
-                self.V[obs] = [0,0]
+
     
     def get_state(self, player_id):
         ''' Get state_str of the player
