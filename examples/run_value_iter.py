@@ -84,7 +84,7 @@ def train(args):
                         args.num_eval_games
                     )[0]
                 )
-        print('Random choices {}'.format(agent.random_choices))
+        # print('Random choices {}'.format(agent.random_choices))
         print('Value choices {}'.format(agent.value_choices))
         # Get the paths
         csv_path, fig_path = logger.csv_path, logger.fig_path

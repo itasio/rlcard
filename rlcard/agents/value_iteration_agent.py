@@ -218,12 +218,12 @@ class ValueIterAgent:
 
         obs, legal_actions = str(state['raw_obs']), list(state['legal_actions'].keys())
         if obs not in self.V:
-            self.random_choices += 1
+            # self.random_choices += 1
             return self.step(state), {}
         best_action_num = self.V[obs][1]
         best_action = self.get_action(best_action_num)
         if best_action in state['raw_legal_actions']:   # if our best action for this state is available take it
-            self.value_choices += 1
+            # self.value_choices += 1
             return best_action, {}
         else:                                           # play randomly
             return self.step(state),{}
