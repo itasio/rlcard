@@ -31,20 +31,19 @@ def train(args, agent1, alpha, gamma, epsilon_decay=0):
     set_seed(args.seed)
 
     # Delete the previous model if it exists
-    model_path = os.path.join(args.log_dir, 'ql_model')
+    model_path = os.path.join(args.log_dir, 'sarsa_model')
     if os.path.exists(model_path):
         shutil.rmtree(model_path)
 
 
-    agent = QLAgent(
+    agent = SARSAAgent(
         env,
         os.path.join(
             args.log_dir,
-            'ql_model',
+            'sarsa_model',
         ),
         alpha,
         gamma,
-        epsilon_decay
     )
     agent.load()
 
@@ -100,19 +99,19 @@ def train(args, agent1, alpha, gamma, epsilon_decay=0):
 
     return csv_path, avg_score
 
-def evaluate_hyperparameters(args, agent, alpha, gamma, e):
-    path, avg_score = train(args, agent, alpha, gamma, e)
-    #avg_score = train(args, agent, alpha, gamma)
-    print(f"Alpha: {alpha}, Gamma: {gamma}, Epsilon_decay: {e} Avg Score: {avg_score}")
-    #print(f"Alpha: {alpha}, Gamma: {gamma}, Epsilon: {horizon}, Avg Score: {avg_score}")
+def evaluate_hyperparameters(args, agent, alpha, gamma):
+    #path, avg_score = train(args, agent, alpha, gamma, e)
+    path, avg_score = train(args, agent, alpha, gamma)
+    #print(f"Alpha: {alpha}, Gamma: {gamma}, Epsilon_decay: {e} Avg Score: {avg_score}")
+    print(f"Alpha: {alpha}, Gamma: {gamma}, Avg Score: {avg_score}")
     # Create a new folder for storing the plots
     plot_dir = os.path.join(args.log_dir, 'plots')
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
 
     # Save the plot for each parameter set
-    plot_path = os.path.join(plot_dir, f'alpha_{alpha}_gamma_{gamma}_epsilon_decay_{e}.png')
-    plot_curve(path, plot_path, f'alpha_{alpha}_gamma_{gamma}_epsilon_decay_{e}.png')
+    plot_path = os.path.join(plot_dir, f'AGENT_{agent}_alpha_{alpha}_gamma_{gamma}.png')
+    plot_curve(path, plot_path, f'AGENT_{agent}_alpha_{alpha}_gamma_{gamma}.png')
 
     return avg_score
 
@@ -126,24 +125,24 @@ if __name__ == '__main__':
     for agent in agents:
         parser = argparse.ArgumentParser("Q-Learning Agent example in RLCard")
         parser.add_argument('--seed', type=int, default=42)
-        parser.add_argument('--num_episodes', type=int, default=5000)
+        parser.add_argument('--num_episodes', type=int, default=3000)
         parser.add_argument('--num_eval_games', type=int, default=2000)
-        parser.add_argument('--evaluate_every', type=int, default=100)
+        parser.add_argument('--evaluate_every', type=int, default=150)
         parser.add_argument('--log_dir', type=str, default='experiments/new_limit_holdem_ql_result/')
 
         args = parser.parse_args()
 
         param_grid = {
-            'alpha': [0.05, 0.1, 0.3],
-            'gamma':  [0.1, 0.3],
-            'epsilon': [0.9, 0.95, 0.99, 0.995, 0.999],  # for epsilon decay
+            'alpha': [0.1, 0.3, 0.5, 0.7],
+            'gamma':  [0.1, 0.3, 0.5, 0.7],
+            #'epsilon': [0.9, 0.95, 0.99, 0.995],  # for epsilon decay
         }
 
         best_score = -np.inf
         best_params = None
 
         for params in ParameterGrid(param_grid):
-            score = evaluate_hyperparameters(args, agent, params['alpha'], params['gamma'], params['epsilon'])
+            score = evaluate_hyperparameters(args, agent, params['alpha'], params['gamma'])#, params['epsilon'])
             if score > best_score:
                 best_score = score
                 best_params = params

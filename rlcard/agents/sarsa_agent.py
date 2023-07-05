@@ -25,21 +25,24 @@ class SARSAAgent:
 
         # A policy is a dict state_str -> action probabilities
         self.policy = collections.defaultdict(list)
-
+        self.a = len(self.policy)
         # Regret is a dict state_str -> action regrets
         self.qualities = collections.defaultdict(list)
 
         self.iteration = 0
 
     def train(self):
-        ''' Do one iteration of QLA
-                '''
+        ''' Do one iteration of Sarsa
+        '''
         self.iteration += 1
+        self.a = len(self.policy)
         self.env.reset()
         self.find_agent()
         self.traverse_tree()
 
     def find_agent(self):
+        ''' Find if the agent starts first or second
+                '''
         agents = self.env.get_agents()
         for id, agent in enumerate(agents):
             if isinstance(agent, SARSAAgent):
@@ -47,6 +50,14 @@ class SARSAAgent:
                 break
 
     def traverse_tree(self):
+        ''' Traverse the game tree:
+
+                Check if the game is over to return the chips earned(reward of the game)
+                If opponents plays make the other agent play
+                If our agent plays check every possible action and get the Q value of the action
+                Then return the Vstate of current state which is Sum(prob(actiona)*V(next_state,actiona)) (on policy)
+                Change the policy according to the new Q values
+                '''
         if self.env.is_over():
             chips = self.env.get_payoffs()
             return chips[self.agent_id]
@@ -54,21 +65,6 @@ class SARSAAgent:
         current_player = self.env.get_player_id()
         # compute the quality of previous state
         if not current_player == self.agent_id:
-            # quality = 0
-            # obs, legal_actions = self.get_state(current_player)
-            # # other agent move
-            # probs = [0 for _ in range(self.env.num_actions)]
-            # for i in legal_actions:
-            #     probs[i] = 1 / len(legal_actions)
-            #
-            # for action in legal_actions:
-            #     action_prob = probs[action]
-            #     # Keep traversing the child state
-            #     self.env.step(action)
-            #     value = self.traverse_tree()
-            #     self.env.step_back()
-            #     quality += action_prob * self.gamma * value
-
             state = self.env.get_state(current_player)
             # other agent move
             action = self.env.agents[current_player].step(state)
@@ -101,11 +97,12 @@ class SARSAAgent:
         return value*self.gamma
 
     def action_probs(self, obs, legal_actions, policy, action_values):
-        ''' Obtain the action probabilities of the current state
+        ''' Obtain the action probabilities(policy) of the current state
+        or create a new policy
 
         Args:
             obs (str): state_str
-            legal_actions (list): List of leagel actions
+            legal_actions (list): List of legal actions
             player_id (int): The current player
             policy (dict): The used policy
             action_values (dict): The action_values of policy

@@ -10,7 +10,7 @@ class QLAgent:
     ''' Implement Q-learning algorithm
     '''
 
-    def __init__(self, env, model_path='./ql_model', a=0.1, g=0.1, e=0.99):
+    def __init__(self, env, model_path='./ql_model', a=0.1, g=1, e=0.99):
         ''' Initialize Agent
 dp
          Args:
@@ -25,6 +25,7 @@ dp
         self.env = env
         self.model_path = model_path
         self.epsilon_min = 0.01
+        self.v = 0
 
         # A policy is a dict state_str -> action probabilities
         self.policy = collections.defaultdict(list)
@@ -40,10 +41,13 @@ dp
         self.iteration += 1
         self.env.reset()
         self.find_agent()
-        self.traverse_tree()
+        v = self.traverse_tree()
         self._decay_epsilon()
+        self.v = v
 
     def find_agent(self):
+        ''' Find if the agent starts first or second
+        '''
         agents = self.env.get_agents()
         for id, agent in enumerate(agents):
             if isinstance(agent, QLAgent):
@@ -51,16 +55,29 @@ dp
                 break
 
     def _decay_epsilon(self):
+        ''' Decay epsilon
+        '''
         if self.epsilon > self.epsilon_min:
             self.epsilon = max(self.epsilon_min, self.epsilon * self.decay_factor)
 
     def traverse_tree(self):
+        ''' Traverse the game tree:
+
+        Check if the game is over to return the chips earned(reward of the game)
+        If opponents plays make the other agent play
+        If our agent plays check every possible action and get the Q value of the action
+        Then return the Qvalue of the best or a random state according to the epsilon (off policy)
+        Change the policy according to the new Q values
+        '''
+
+        # Check if the game is over to return the chips earned(reward of the game)
         if self.env.is_over():
             chips = self.env.get_payoffs()
             return chips[self.agent_id]
 
         current_player = self.env.get_player_id()
-        # compute the quality of previous state
+
+        # other agent move
         if not current_player == self.agent_id:
             state = self.env.get_state(current_player)
             # other agent move
@@ -70,12 +87,12 @@ dp
             self.env.step(action)
             Vstate = self.traverse_tree()
             self.env.step_back()
-            return Vstate
+            return Vstate * self.gamma
 
         if current_player == self.agent_id:
             quality = {}
             obs, legal_actions = self.get_state(current_player)
-            # if first time we encounter state initialize qualities
+            # if first time we encounter state initialize qualities or get the previous policy
             self.action_probs(obs, legal_actions, self.policy, self.qualities)
 
             for action in legal_actions:
@@ -100,11 +117,12 @@ dp
         return qstate * self.gamma
 
     def action_probs(self, obs, legal_actions, policy, action_values):
-        ''' Obtain the action probabilities of the current state
+        ''' Obtain the action probabilities(policy) of the current state
+        or create a new policy
 
         Args:
             obs (str): state_str
-            legal_actions (list): List of leagel actions
+            legal_actions (list): List of legal actions
             player_id (int): The current player
             policy (dict): The used policy
             action_values (dict): The action_values of policy
@@ -114,6 +132,7 @@ dp
                 action_probs(numpy.array): The action probabilities
                 legal_actions (list): Indices of legal actions
         '''
+
         # if new state initialize qualities and policy
         if obs not in policy.keys() and obs not in self.qualities.keys():
             tactions = np.array([-np.inf for action in range(self.env.num_actions)])
@@ -127,7 +146,6 @@ dp
             action_probs = policy[obs].copy()
         action_probs = remove_illegal(action_probs, legal_actions)
         return action_probs
-
 
     def update_policy(self, obs, next_state_values, legal_actions):
         ''' Update the policy according to the new state/action quality
@@ -178,7 +196,6 @@ dp
         '''
         return self.eval_step(state)
 
-
     def get_state(self, player_id):
         ''' Get state_str of the player
 
@@ -194,7 +211,7 @@ dp
         return state['obs'].tostring(), list(state['legal_actions'].keys())
 
     def save(self):
-        '''  Save model
+        ''' Save model
         '''
 
         if not os.path.exists(self.model_path):

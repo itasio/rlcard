@@ -23,7 +23,7 @@ class NewLimitholdemEnv(Env):
         self.game = Game()
         super().__init__(config)
         self.actions = ['call', 'raise', 'fold', 'check']
-        self.state_shape = [[31] for _ in range(self.num_players)]
+        self.state_shape = [[32] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
 
         with open(os.path.join(rlcard.__path__[0], 'games/newlimitholdem/card2index.json'), 'r') as file:
@@ -55,18 +55,19 @@ class NewLimitholdemEnv(Env):
         public_cards = state['public_cards']
         hand = state['hand']
 
-        obs = np.zeros(31)
+        obs = np.zeros(32)
         idx = [self.card2index[card] for card in hand]
         obs[idx] = 1
         idx2 = []
         for j, card in enumerate(public_cards):
             idx2 = [(self.card2index[card] + 5*j)]
-        obs[idx2] = 1
+            obs[idx2] = 1
         obs[state['my_chips'] + 15] = 1
         obs[sum(state['all_chips']) - state['my_chips'] + 21] = 1
         for i in legal_actions:
             idx3 = [i + 27]
             obs[idx3] = 1
+        obs[31] = state['first']
 
         extracted_state['obs'] = obs
         extracted_state['raw_obs'] = state
@@ -121,3 +122,31 @@ class NewLimitholdemEnv(Env):
 
     def get_agents(self):
         return self.agents
+
+
+    def change_op_hand(self, card, player_id):
+        '''Change the card of the opponent
+        '''
+        self.game.change_hand(card, player_id)
+
+    def op_has_card(self, player):
+        '''Check if the opponent has a card
+        '''
+        if self.game.op_hand(player) is None:
+            return True
+        else:
+            return False
+
+    def first_round(self):
+        '''Check if the game is still in first round
+        '''
+        if self.game.round_counter == 0:
+            return True
+        else:
+            return False
+
+    def get_card(self, player_id):
+        '''Get the card of player
+        '''
+        card = self.game.op_hand(player_id)
+        return card.rank

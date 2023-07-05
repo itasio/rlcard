@@ -40,12 +40,14 @@ class NewLimitHoldemGame:
         self.round_counter = None
         self.history = None
         self.history_raises_nums = None
+        self.first = None
+        self.pcards = None
 
     def configure(self, game_config):
         """Specify some game specific parameters, such as number of players"""
         self.num_players = game_config['game_num_players']
 
-    def init_game(self):
+    def init_game(self, starter=None, agent=None, hcard=None, pcard1=None, pcard2=None, opcard=None):
         """
         Initialize the game of limit texas holdem
 
@@ -66,10 +68,22 @@ class NewLimitHoldemGame:
         # Initialize a judger class which will decide who wins in the end
         self.judger = Judger(self.np_random)
 
+        if pcard1 is not None and pcard2 is not None:
+            self.pcards = []
+            self.pcards.append(pcard1)
+            self.pcards.append(pcard2)
+
+
         # Deal cards to each  player to prepare for the first round
         # 1 card per player for our mode
-        for i in range(self.num_players):
-            self.players[i % self.num_players].hand.append(self.dealer.deal_card())
+        if hcard is None:
+            for i in range(self.num_players):
+                self.players[i % self.num_players].hand.append(self.dealer.deal_card())
+        else:
+            self.players[agent].hand.append(hcard)
+
+        if opcard is not None:
+            self.players[(agent + 1) % self.num_players].hand.append(opcard)
 
 
         # Initialize public cards
@@ -81,8 +95,12 @@ class NewLimitHoldemGame:
         self.players[b].in_chips = self.ante
         self.players[s].in_chips = self.ante
 
-        # The player next to the big blind plays the first
-        self.game_pointer = (b + 1) % self.num_players
+        # The player that plays the first
+        if starter is None:
+            self.game_pointer = (b + 1) % self.num_players
+        else:
+            self.game_pointer = starter
+        self.first = self.game_pointer
 
         # Initialize a bidding round, in the first round, the big blind and the small blind needs to
         # be passed to the round for processing.
@@ -140,8 +158,12 @@ class NewLimitHoldemGame:
         if self.round.is_over():
             # For the first round, we deal 2 cards
             if self.round_counter == 0:
-                self.public_cards.append(self.dealer.deal_card())
-                self.public_cards.append(self.dealer.deal_card())
+                if self.pcards is None:
+                    self.public_cards.append(self.dealer.deal_card())
+                    self.public_cards.append(self.dealer.deal_card())
+                else:
+                    self.public_cards.append(self.pcards[0])
+                    self.public_cards.append(self.pcards[1])
 
             self.round_counter += 1
             self.round.start_new_round(self.game_pointer)
@@ -149,6 +171,18 @@ class NewLimitHoldemGame:
         state = self.get_state(self.game_pointer)
 
         return state, self.game_pointer
+
+    def change_hand(self, card, player_id):
+        if not self.players[player_id].hand:
+            self.players[player_id].hand.append(card)
+        else:
+            self.players[player_id].hand[0] = card
+
+    def op_hand(self, player):
+        if not self.players[player].hand:
+            return None
+        else:
+            return self.players[player].hand[0]
 
     def step_back(self):
         """
@@ -201,9 +235,10 @@ class NewLimitHoldemGame:
         Returns:
             (dict): The state of the player
         """
+
         chips = [self.players[i].in_chips for i in range(self.num_players)]
         legal_actions = self.get_legal_actions()
-        state = self.players[player].get_state(self.public_cards, chips, legal_actions)
+        state = self.players[player].get_state(self.public_cards, chips, legal_actions, self.first)
         state['raise_nums'] = self.history_raise_nums
 
         return state
