@@ -12,6 +12,6 @@ new_limit_holdem_human: play againt any suitable agent
   - run_ql: train ql  
   - tune_ql: tune hyperparameters of ql
 - **Policy iteration** algorithm implemented:  pi_agent
-- **Value iteration** algorithm implemented  
+- **Value iteration** algorithm implemented: value_iteration_agent  
 - **SARSA variation** algorithm implemented: sarsa_agent(SARSAAgent)
 
